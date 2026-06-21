@@ -47,7 +47,7 @@ Aquí vive todo lo relacionado con las reglas del negocio.
 
 Todas las entidades heredan de `BaseEntity` que a su vez hereda de `Auditable`:
 
-```
+
 Auditable
   FechaCreacion, CreadoPor
   FechaModificacion
@@ -55,7 +55,7 @@ Auditable
 
 BaseEntity : Auditable
   Id (int, autogenerado)
-```
+
 
 ### Manejo de errores — Result Pattern
 
