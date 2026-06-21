@@ -164,5 +164,3 @@ UsuarioParameters      ← solo construye SqlParameter[]
 - SMTP — envío de correos
 
 ---
-
-> Proyecto académico — Programación II, ITLA 2026
