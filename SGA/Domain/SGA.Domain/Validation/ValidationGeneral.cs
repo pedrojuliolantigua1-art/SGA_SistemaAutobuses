@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace SGA.Domain.Validation
 {
+    //Estas son las de campo y fecha y todas esas en general
     public static class ValidationGeneral
     {
         public static Result Requerido(string? valor, string campo)

@@ -5,7 +5,6 @@ using SGA.Domain.Services;
 
 namespace SGA.Infrastructure.Email
 {
- 
     public sealed class SmtpEmailSender : IEmailSender
     {
         private readonly SmtpOptions _options;

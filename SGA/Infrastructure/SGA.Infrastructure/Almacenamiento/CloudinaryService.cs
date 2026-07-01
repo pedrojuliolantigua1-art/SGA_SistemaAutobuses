@@ -23,7 +23,7 @@ namespace SGA.Infrastructure.Almacenamiento
                 opt.ApiSecret);
 
             _cloudinary = new Cloudinary(account);
-            _cloudinary.Api.Secure = true; // siempre HTTPS
+            _cloudinary.Api.Secure = true;
         }
 
         public async Task<ResultadoSubida> SubirAsync(
