@@ -5,8 +5,25 @@ namespace SGA.Domain.Repository.Interfaces
 {
     public interface IAutorizacionRepository : IBaseRepository<AutorizacionTransporte, AutorizacionModel>
     {
+        /// <summary>
+        /// Aqui se obtiene la autorizacion vigente de un usuario, si no tiene vigente devuelve null
+        /// </summary>
+        /// <param name="UsuarioId"></param>
+        /// <returns></returns>
         Task<AutorizacionModel> GetbyUsuario(int UsuarioId);
+
+        /// <summary>
+        /// Este metodo obtiene todas las autorizaciones vigentes, es decir, aquellas que no han expirado y que estan activas
+        /// </summary>
+        /// <returns></returns>
         Task<IReadOnlyList<AutorizacionModel>> GetVigentes();
+
+        /// <summary>
+        /// Este metodo obtiene todas las autorizaciones emitidas en un periodo de tiempo determinado, desde y hasta inclusive
+        /// </summary>
+        /// <param name="desde"></param>
+        /// <param name="hasta"></param>
+        /// <returns></returns>
         Task<IReadOnlyList<AutorizacionModel>> GetbyPeriodo(DateTime desde, DateTime hasta);
 
         // la transaccion Registra el pago y crea la autorizacion y
