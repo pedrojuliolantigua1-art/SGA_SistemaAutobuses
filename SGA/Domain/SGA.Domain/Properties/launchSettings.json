@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "SGA.Domain": {
+      "commandName": "Project"
+    }
+  }
+}
