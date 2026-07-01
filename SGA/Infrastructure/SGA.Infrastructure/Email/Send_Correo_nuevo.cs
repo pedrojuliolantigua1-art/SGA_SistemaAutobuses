@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SGA.Infrastructure.Email
 {
-    internal class Envio
+    internal class Send_Correo_nuevo
     {
     }
 }

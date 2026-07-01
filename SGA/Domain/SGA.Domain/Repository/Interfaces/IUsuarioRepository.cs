@@ -15,12 +15,14 @@ namespace SGA.Domain.Repository.Interfaces
         /// <param name="correo"></param>
         /// <returns></returns>
         Task<UsuarioModel?> GetbyCorreo(string correo);
+
         /// <summary>
         /// Saco todos los usuarios de un rol especifico
         /// </summary>
         /// <param name="rol"></param>
         /// <returns></returns>
         Task<UsuarioModel> GetbyRol(RolUsuario rol);
+
         /// <summary>
         /// Ver si la contraseña coincide con el hash que se almaceno
         /// </summary>
