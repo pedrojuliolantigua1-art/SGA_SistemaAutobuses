@@ -1,4 +1,3 @@
-﻿
 using SGA.Domain.Enum;
 
 namespace SGA.Domain.Models.Accesos
@@ -13,5 +12,8 @@ namespace SGA.Domain.Models.Accesos
         public string? MotivoRechazo { get; set; }
         public DateTime FechaHora { get; set; }
         public int ValidadoPorUsuarioId { get; set; }
+
+        public string? UsuarioNombre { get; set; }
+        public string? ValidadorNombre { get; set; }
     }
 }

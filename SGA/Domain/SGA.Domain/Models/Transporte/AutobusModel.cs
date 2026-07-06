@@ -1,4 +1,5 @@
-﻿
+using SGA.Domain.Models.Fotos;
+
 namespace SGA.Domain.Models.Transporte
 {
     public class AutobusModel
@@ -8,5 +9,7 @@ namespace SGA.Domain.Models.Transporte
         public string? Modelo { get; set; }
         public int Capacidad { get; set; }
         public string Estado { get; set; } = "Disponible";
+
+        public List<FotoAutobusModel> Fotos { get; set; } = new();
     }
 }

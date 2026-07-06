@@ -1,4 +1,4 @@
-﻿using SGA.Domain.Enum;
+using SGA.Domain.Enum;
 
 namespace SGA.Domain.Models.Viajes
 {
@@ -15,5 +15,8 @@ namespace SGA.Domain.Models.Viajes
         public DateTime? HoraFinReal { get; set; }
         public int CupoActual { get; set; }
         public int CapacidadMaxima { get; set; }
+
+        public string? ConductorNombre { get; set; }
+        public List<IncidenciaModel> Incidencias { get; set; } = new();
     }
 }

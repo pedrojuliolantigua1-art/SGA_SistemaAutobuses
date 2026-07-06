@@ -61,6 +61,50 @@ namespace SGA.Application.Services
             return Result<IReadOnlyList<ViajeDto>>.Ok(viajes.Select(MapearViaje).ToList());
         }
 
+        public async Task<Result<ViajeDto>> ObtenerPorIdAsync(int viajeId)
+        {
+            var validacion = ValidationGeneral.IdValido(viajeId, "viaje");
+            if (validacion.EsFallo)
+                return Result<ViajeDto>.Fallo(validacion.Error!);
+
+            var viaje = await _viajeRepository.GetByIdAsync(viajeId);
+            return viaje is null
+                ? Result<ViajeDto>.Fallo(ApplicationErrors.NoEncontrado("el viaje"))
+                : Result<ViajeDto>.Ok(MapearViaje(viaje));
+        }
+
+        public async Task<Result<IReadOnlyList<ViajeDto>>> ListarActivosAsync()
+        {
+            var viajes = await _viajeRepository.GetActivos();
+            return Result<IReadOnlyList<ViajeDto>>.Ok(viajes.Select(MapearViaje).ToList());
+        }
+
+        public async Task<Result<IReadOnlyList<ViajeDto>>> ListarProgramadosAsync()
+        {
+            var viajes = await _viajeRepository.GetProgramados();
+            return Result<IReadOnlyList<ViajeDto>>.Ok(viajes.Select(MapearViaje).ToList());
+        }
+
+        public async Task<Result<IReadOnlyList<ViajeDto>>> ListarPorRutaAsync(int rutaId)
+        {
+            var validacion = ValidationGeneral.IdValido(rutaId, "ruta");
+            if (validacion.EsFallo)
+                return Result<IReadOnlyList<ViajeDto>>.Fallo(validacion.Error!);
+
+            var viajes = await _viajeRepository.GetbyRuta(rutaId);
+            return Result<IReadOnlyList<ViajeDto>>.Ok(viajes.Select(MapearViaje).ToList());
+        }
+
+        public async Task<Result<IReadOnlyList<ViajeDto>>> ListarPorAutobusAsync(int autobusId)
+        {
+            var validacion = ValidationGeneral.IdValido(autobusId, "autobus");
+            if (validacion.EsFallo)
+                return Result<IReadOnlyList<ViajeDto>>.Fallo(validacion.Error!);
+
+            var viajes = await _viajeRepository.GetbyAutobus(autobusId);
+            return Result<IReadOnlyList<ViajeDto>>.Ok(viajes.Select(MapearViaje).ToList());
+        }
+
         public async Task<Result<ViajeDto>> ProgramarAsync(ProgramarViajeDto dto)
         {
             var datosValidos = ValidationGeneral.Combinar(

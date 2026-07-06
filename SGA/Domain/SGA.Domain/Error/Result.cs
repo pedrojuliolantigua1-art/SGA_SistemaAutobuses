@@ -30,8 +30,7 @@ namespace SGA.Domain.Error
     {
         public T? Valor { get; }
 
-        private Result(T? valor, bool esExitoso, Error? error)
-            : base(esExitoso, error)
+        private Result(T? valor, bool esExitoso, Error? error): base(esExitoso, error)
         {
             Valor = valor;
         }

@@ -24,6 +24,9 @@ namespace SGA.Domain.Error
 
             public static readonly Error ConductorNoDisponible =
                 new("CatalogoTransporte.ConductorNoDisponible", "El conductor no esta disponible para asignacion.");
+
+            public static readonly Error OrdenParadaDuplicado =
+                new("CatalogoTransporte.OrdenParadaDuplicado", "No puede haber dos paradas con el mismo orden en la misma ruta.");
         }
     }
 }

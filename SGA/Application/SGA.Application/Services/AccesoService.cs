@@ -110,6 +110,14 @@ namespace SGA.Application.Services
             return Result<AccesoDto>.Ok(MapearAcceso(registro));
         }
 
+        public async Task<Result<AccesoDto>> ObtenerPorIdAsync(int accesoId)
+        {
+            var acceso = await _accesoRepository.GetByIdAsync(accesoId);
+            return acceso is null
+                ? Result<AccesoDto>.Fallo(ApplicationErrors.NoEncontrado("el acceso"))
+                : Result<AccesoDto>.Ok(MapearAcceso(acceso));
+        }
+
         public async Task<Result<IReadOnlyList<AccesoDto>>> ListarPorUsuarioAsync(int usuarioId)
         {
             var validacion = ValidationGeneral.IdValido(usuarioId, "usuario");
@@ -206,7 +214,7 @@ namespace SGA.Application.Services
 
             AutorizacionTransporte autorizacion = model switch
             {
-                TicketMensualModel ticket => new TicketMensual
+                TicketDiarioModel ticket => new TicketDiario
                 {
                     FechaInicio = ticket.FechaInicio,
                     FechaFin = ticket.FechaFin

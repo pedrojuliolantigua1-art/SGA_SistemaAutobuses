@@ -67,6 +67,28 @@ namespace SGA.Application.Services
             return Result<IReadOnlyList<PagoDto>>.Ok(pagos.Select(Mapear).ToList());
         }
 
+        public async Task<Result<PagoDto>> ObtenerPorIdAsync(int pagoId)
+        {
+            var validacion = ValidationGeneral.IdValido(pagoId, "pago");
+            if (validacion.EsFallo)
+                return Result<PagoDto>.Fallo(validacion.Error!);
+
+            var pago = await _pagoRepository.GetByIdAsync(pagoId);
+            return pago is null
+                ? Result<PagoDto>.Fallo(ApplicationErrors.NoEncontrado("el pago"))
+                : Result<PagoDto>.Ok(Mapear(pago));
+        }
+
+        public async Task<Result<IReadOnlyList<PagoDto>>> ListarPorPeriodoAsync(DateTime desde, DateTime hasta)
+        {
+            var validacion = ValidationGeneral.RangoFechasValido(desde, hasta, "pagos");
+            if (validacion.EsFallo)
+                return Result<IReadOnlyList<PagoDto>>.Fallo(validacion.Error!);
+
+            var pagos = await _pagoRepository.GetByPeriodo(desde, hasta);
+            return Result<IReadOnlyList<PagoDto>>.Ok(pagos.Select(Mapear).ToList());
+        }
+
         private static PagoDto Mapear(PagoModel p) =>
             new(p.Id, p.UsuarioTransporteId, p.AutorizacionTransporteId, p.Monto, p.TipoPago, p.Estado, p.NumeroComprobante, p.FechaHora, p.RegistradoPorUsuarioId);
     }

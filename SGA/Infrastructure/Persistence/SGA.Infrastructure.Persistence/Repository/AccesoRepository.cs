@@ -1,85 +1,82 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using SGA.Domain.Entities.Accesos;
+using SGA.Domain.Entities.Auditoria;
 using SGA.Domain.Enum;
 using SGA.Domain.Models.Accesos;
 using SGA.Domain.Repository.Interfaces;
-using SGA.Infrastructure.Persistence.Abstractions;
 using SGA.Infrastructure.Persistence.Common;
+using SGA.Infrastructure.Persistence.Data;
+using System.Linq.Expressions;
 
 namespace SGA.Infrastructure.Persistence.Repositories
 {
-    public sealed class AccesoRepository : SqlRepositoryBase, IAccesoRepository
+    public sealed class AccesoRepository : BaseRepository<RegistroUsoTransporte, AccesoModel>, IAccesoRepository
     {
-        public AccesoRepository(ISqlConnectionfactory factory) : base(factory) { }
+        public AccesoRepository(SgaDbContext context) : base(context) { }
 
-        public async Task<AccesoModel?> GetByIdAsync(int id)
-            => await QuerySingleOrDefaultAsync("sp_Acceso_GetById", AccesoMapper.Map, Param("@Id", id));
+        protected override Expression<Func<RegistroUsoTransporte, AccesoModel>> Proyeccion => a => new AccesoModel
+        {
+            Id = a.Id,
+            UsuarioTransporteId = a.UsuarioTransporteId,
+            ViajeId = a.ViajeId,
+            AutorizacionTransporteId = a.AutorizacionTransporteId,
+            ResultadoAcceso = a.ResultadoAcceso,
+            MotivoRechazo = a.MotivoRechazo,
+            FechaHora = a.FechaHora, 
+            ValidadoPorUsuarioId = a.ValidadoPorUsuarioId,
+            UsuarioNombre = a.Usuario != null ? a.Usuario.Nombre + " " + a.Usuario.Apellido : null,
+            ValidadorNombre = a.ValidadoPor != null ? a.ValidadoPor.Nombre + " " + a.ValidadoPor.Apellido : null
+        };
 
-        public async Task<IReadOnlyList<AccesoModel>> GetAllAsync()
-            => await QueryAsync("sp_Acceso_GetAll", AccesoMapper.Map);
+        public async Task<IReadOnlyList<AccesoModel>> GetByViaje(int viajeId) =>
+            await Set.AsNoTracking()
+            .Include(a => a.Usuario)
+            .Include(a => a.ValidadoPor)
+            .Where(a => a.ViajeId == viajeId).Select(Proyeccion).ToListAsync();
 
-        public async Task<IReadOnlyList<AccesoModel>> GetByViaje(int viajeId)
-            => await QueryAsync("sp_Acceso_GetByViaje", AccesoMapper.Map, Param("@ViajeId", viajeId));
+        public async Task<IReadOnlyList<AccesoModel>> GetByUsuario(int usuarioId) =>
+            await Set.AsNoTracking()
+            .Include(a => a.Usuario)
+            .Include(a => a.ValidadoPor)
+            .Where(a => a.UsuarioTransporteId == usuarioId).Select(Proyeccion).ToListAsync();
 
-        public async Task<IReadOnlyList<AccesoModel>> GetByUsuario(int usuarioId)
-            => await QueryAsync("sp_Acceso_GetByUsuario", AccesoMapper.Map, Param("@UsuarioTransporteId", usuarioId));
-
-        public async Task<IReadOnlyList<AccesoModel>> GetByPeriodo(DateTime desde, DateTime hasta)
-            => await QueryAsync("sp_Acceso_GetByPeriodo", AccesoMapper.Map,
-                Param("@Desde", desde), Param("@Hasta", hasta));
-
-        public async Task AddAsync(RegistroUsoTransporte entity)
-            => entity.Id = await ExecuteScalarAsync("sp_Acceso_Insert", AccesoParameters.ParaInsertar(entity));
-
-        public Task UpdateAsync(RegistroUsoTransporte entity)
-            => throw new InvalidOperationException("Los registros de acceso son inmutables.");
-
-        public Task DeleteAsync(RegistroUsoTransporte entity)
-            => throw new InvalidOperationException("Los registros de acceso no se pueden eliminar.");
+        public async Task<IReadOnlyList<AccesoModel>> GetByPeriodo(DateTime desde, DateTime hasta) =>
+            await Set.AsNoTracking()
+            .Include(a => a.Usuario)
+            .Include(a => a.ValidadoPor)
+            .Where(a => a.FechaHora >= desde && a.FechaHora <= hasta)
+            .Select(Proyeccion).ToListAsync();
 
         public async Task<int> RegistrarAbordajeAsync(
             int usuarioId, int viajeId, int autorizacionId, int resultadoAcceso,
-            string? motivoRechazo, DateTime fechaHora, int validadorId,
-            string creadoPor, decimal costoViaje = 1.00m)
-            => await ExecuteScalarAsync("sp_ValidarAbordaje",
-                Param("@UsuarioTransporteId", usuarioId),
-                Param("@ViajeId", viajeId),
-                Param("@AutorizacionTransporteId", autorizacionId),
-                Param("@ResultadoAcceso", resultadoAcceso),
-                Param("@MotivoRechazo", motivoRechazo),
-                Param("@FechaHora", fechaHora),
-                Param("@ValidadoPorUsuarioId", validadorId),
-                Param("@CreadoPor", creadoPor),
-                Param("@CostoViaje", costoViaje));
-    }
-
-    internal static class AccesoMapper
-    {
-        internal static AccesoModel Map(SqlReaderRow r) => new()
+            string? motivoRechazo, DateTime fechaHora, int validadorId, string creadoPor, decimal costoViaje = 30.00m)
         {
-            Id = r.Int("Id"),
-            UsuarioTransporteId = r.Int("UsuarioTransporteId"),
-            ViajeId = r.Int("ViajeId"),
-            AutorizacionTransporteId = r.NullableInt("AutorizacionTransporteId"),
-            ResultadoAcceso = r.Enum<ResultadoAcceso>("ResultadoAcceso"),
-            MotivoRechazo = r.Str("MotivoRechazo"),
-            FechaHora = r.DateTime("FechaHora"),
-            ValidadoPorUsuarioId = r.Int("ValidadoPorUsuarioId")
-        };
-    }
+            await using var transaccion = await Context.Database.BeginTransactionAsync();
+            var acceso = new RegistroUsoTransporte
+            {
+                UsuarioTransporteId = usuarioId, ViajeId = viajeId,
+                AutorizacionTransporteId = autorizacionId == 0 ? null : autorizacionId,
+                ResultadoAcceso = (ResultadoAcceso)resultadoAcceso, MotivoRechazo = motivoRechazo,
+                FechaHora = fechaHora, ValidadoPorUsuarioId = validadorId, CreadoPor = creadoPor
+            };
+            await Set.AddAsync(acceso);
+            await Context.SaveChangesAsync();
 
-    internal static class AccesoParameters
-    {
-        internal static SqlParameter[] ParaInsertar(RegistroUsoTransporte e) =>
-        [
-            SqlRepositoryBase.Param("@UsuarioTransporteId",      e.UsuarioTransporteId),
-            SqlRepositoryBase.Param("@ViajeId",                  e.ViajeId),
-            SqlRepositoryBase.Param("@AutorizacionTransporteId", e.AutorizacionTransporteId),
-            SqlRepositoryBase.Param("@ResultadoAcceso",          (int)e.ResultadoAcceso),
-            SqlRepositoryBase.Param("@MotivoRechazo",            e.MotivoRechazo),
-            SqlRepositoryBase.Param("@FechaHora",                e.FechaHora),
-            SqlRepositoryBase.Param("@ValidadoPorUsuarioId",     e.ValidadoPorUsuarioId),
-            SqlRepositoryBase.Param("@CreadoPor",                e.CreadoPor)
-        ];
+            if (acceso.ResultadoAcceso == ResultadoAcceso.Permitido && acceso.AutorizacionTransporteId is int autId)
+            {
+                var tarjeta = await Context.TarjetasRecargables.FirstOrDefaultAsync(t => t.Id == autId);
+                if (tarjeta is not null) { tarjeta.SaldoDisponible -= costoViaje; Context.TarjetasRecargables.Update(tarjeta); await Context.SaveChangesAsync(); }
+            }
+
+            await Context.RegistrosAuditoria.AddAsync(new RegistroAuditoria
+            {
+                UsuarioTransporteId = validadorId, Accion = "RegistrarAcceso",
+                EntidadAfectada = nameof(RegistroUsoTransporte), EntidadId = acceso.Id.ToString(),
+                Detalle = $"Resultado: {acceso.ResultadoAcceso}", FechaHora = fechaHora, CreadoPor = creadoPor
+            });
+            await Context.SaveChangesAsync();
+            await transaccion.CommitAsync();
+            return acceso.Id;
+        }
     }
 }

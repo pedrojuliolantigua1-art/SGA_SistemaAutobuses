@@ -3,6 +3,7 @@ using SGA.Application.Interfaces.Services;
 using SGA.Domain.Error;
 using SGA.Domain.Models.Notificaciones;
 using SGA.Domain.Repository.Interfaces;
+using SGA.Domain.Rules.Notificaciones;
 using SGA.Domain.Validation;
 
 namespace SGA.Application.Services
@@ -13,6 +14,23 @@ namespace SGA.Application.Services
 
         public NotificacionService(INotificacionRepository notificacionRepository)
             => _notificacionRepository = notificacionRepository;
+
+        public async Task<Result<NotificacionDto>> CrearAsync(CrearNotificacionDto dto)
+        {
+            var notificacionCreada = NotificacionRules.CrearManual(
+                dto.UsuarioTransporteId, dto.Tipo, dto.Titulo, dto.Mensaje, dto.FechaHora);
+
+            if (notificacionCreada.EsFallo)
+                return Result<NotificacionDto>.Fallo(notificacionCreada.Error!);
+
+            var notificacion = notificacionCreada.Valor!;
+            notificacion.CreadoPor = dto.CreadoPor;
+
+            await _notificacionRepository.AddAsync(notificacion);
+            return Result<NotificacionDto>.Ok(new NotificacionDto(
+                notificacion.Id, notificacion.UsuarioTransporteId, notificacion.Tipo,
+                notificacion.Titulo, notificacion.Mensaje, notificacion.FechaHora, notificacion.Leida));
+        }
 
         public async Task<Result<IReadOnlyList<NotificacionDto>>> ListarPorUsuarioAsync(int usuarioId)
         {

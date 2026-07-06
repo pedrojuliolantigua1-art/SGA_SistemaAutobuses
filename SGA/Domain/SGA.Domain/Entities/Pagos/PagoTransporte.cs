@@ -1,7 +1,5 @@
-﻿using SGA.Domain.Base;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using SGA.Domain.Base;
+using SGA.Domain.Entities.Usuarios;
 
 namespace SGA.Domain.Entities.Pagos
 {
@@ -11,11 +9,12 @@ namespace SGA.Domain.Entities.Pagos
         public int AutorizacionTransporteId { get; set; }
         public decimal Monto { get; set; }
         public string? TipoPago { get; set; }
-        public string? Estado {  get; set; }
+        public string? Estado { get; set; }
         public string? NumeroComprobante { get; set; }
-
         public DateTime FechaHora { get; set; }
         public int RegistradoPorUsuarioId { get; set; }
 
+        public virtual UsuarioTransporte? Usuario { get; set; }
+        public virtual UsuarioTransporte? RegistradoPor { get; set; }
     }
 }

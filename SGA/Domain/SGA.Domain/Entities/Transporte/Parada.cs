@@ -1,7 +1,4 @@
-﻿using SGA.Domain.Base;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using SGA.Domain.Base;
 
 namespace SGA.Domain.Entities.Transporte
 {
@@ -9,7 +6,9 @@ namespace SGA.Domain.Entities.Transporte
     {
         public int RutaId { get; set; }
         public string? Nombre { get; set; }
-        public string? Referencia {  get; set; }
-        public int Orden {  get; set; }
+        public string? Referencia { get; set; }
+        public int Orden { get; set; }
+
+        public virtual Ruta? Ruta { get; set; }
     }
 }

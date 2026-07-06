@@ -6,7 +6,6 @@ using SGA.Domain.Entities.Pagos;
 using SGA.Domain.Error;
 using SGA.Domain.Models.Autorizaciones;
 using SGA.Domain.Models.Pagos;
-using SGA.Domain.Models.Usuarios;
 using SGA.Domain.Repository.Interfaces;
 using SGA.Domain.Rules;
 using SGA.Domain.Validation;
@@ -29,198 +28,151 @@ namespace SGA.Application.Services
             _usuarioRepository = usuarioRepository;
         }
 
-        public async Task<Result<AutorizacionDto>> ObtenerPorUsuarioAsync(int usuarioId)
+        public async Task<Result<AutorizacionResumenDto>> ObtenerPorUsuarioAsync(int usuarioId)
         {
             var validacion = ValidationGeneral.IdValido(usuarioId, "usuario");
-
             if (validacion.EsFallo)
-            {
-                return Result<AutorizacionDto>.Fallo(validacion.Error!);
-            }
+                return Result<AutorizacionResumenDto>.Fallo(validacion.Error!);
 
             var autorizacion = await ObtenerAutorizacionActivaAsync(usuarioId);
 
             return autorizacion is null
-                ? Result<AutorizacionDto>.Fallo(ApplicationErrors.NoEncontrado("la autorizacion del usuario"))
-                : Result<AutorizacionDto>.Ok(MapearAutorizacion(autorizacion));
+                ? Result<AutorizacionResumenDto>.Fallo(ApplicationErrors.NoEncontrado("la autorizacion del usuario"))
+                : Result<AutorizacionResumenDto>.Ok(MapearResumen(autorizacion));
         }
 
-        public async Task<Result<IReadOnlyList<AutorizacionDto>>> ListarVigentesAsync()
+
+        public async Task<Result<AutorizacionResumenDto>> ObtenerPorIdAsync(int autorizacionId)
+        {
+            var autorizacion = await _autorizacionRepository.GetByIdAsync(autorizacionId);
+            return autorizacion is null
+                ? Result<AutorizacionResumenDto>.Fallo(ApplicationErrors.NoEncontrado("la autorizacion"))
+                : Result<AutorizacionResumenDto>.Ok(MapearResumen(autorizacion));
+        }
+
+        public async Task<Result<IReadOnlyList<AutorizacionResumenDto>>> ListarVigentesAsync()
         {
             var autorizaciones = await _autorizacionRepository.GetVigentes();
-            return Result<IReadOnlyList<AutorizacionDto>>.Ok(autorizaciones.Select(MapearAutorizacion).ToList());
+            return Result<IReadOnlyList<AutorizacionResumenDto>>.Ok(autorizaciones.Select(MapearResumen).ToList());
         }
 
-        public async Task<Result<IReadOnlyList<AutorizacionDto>>> ListarPorPeriodoAsync(DateTime desde, DateTime hasta)
+        public async Task<Result<IReadOnlyList<AutorizacionResumenDto>>> ListarPorPeriodoAsync(DateTime desde, DateTime hasta)
         {
             var validacion = ValidationGeneral.RangoFechasValido(desde, hasta, "autorizaciones");
-
             if (validacion.EsFallo)
-            {
-                return Result<IReadOnlyList<AutorizacionDto>>.Fallo(validacion.Error!);
-            }
+                return Result<IReadOnlyList<AutorizacionResumenDto>>.Fallo(validacion.Error!);
 
             var autorizaciones = await _autorizacionRepository.GetbyPeriodo(desde, hasta);
-            return Result<IReadOnlyList<AutorizacionDto>>.Ok(autorizaciones.Select(MapearAutorizacion).ToList());
+            return Result<IReadOnlyList<AutorizacionResumenDto>>.Ok(autorizaciones.Select(MapearResumen).ToList());
         }
 
-        public async Task<Result<AutorizacionDto>> EmitirTicketMensualAsync(CrearTicketMensualDto dto)
+        public async Task<Result<TicketDiarioDto>> EmitirTicketDiarioAsync(CrearTicketDiarioDto dto)
         {
             var usuarioValido = await ValidarUsuarioActivoAsync(dto.UsuarioTransporteId);
-
             if (usuarioValido.EsFallo)
-            {
-                return Result<AutorizacionDto>.Fallo(usuarioValido.Error!);
-            }
+                return Result<TicketDiarioDto>.Fallo(usuarioValido.Error!);
 
             var autorizacionActual = await ObtenerAutorizacionActivaAsync(dto.UsuarioTransporteId);
-
             if (autorizacionActual is not null)
-            {
-                return Result<AutorizacionDto>.Fallo(
-                    ApplicationErrors.OperacionInvalida("El usuario ya tiene una autorizacion activa."));
-            }
+                return Result<TicketDiarioDto>.Fallo(ApplicationErrors.OperacionInvalida("El usuario ya tiene una autorizacion activa."));
 
             var pago = ConvertirPago(await _pagoRepository.GetPagoSinAutorizacion(dto.UsuarioTransporteId));
-            var ticketCreado = AutorizacionRules.CrearTicketMensual(pago, dto.UsuarioTransporteId, dto.FechaInicio);
+            var ticketCreado = AutorizacionRules.CrearTicketDiario(pago, dto.UsuarioTransporteId, dto.FechaInicio);
 
             if (ticketCreado.EsFallo)
-            {
-                return Result<AutorizacionDto>.Fallo(ticketCreado.Error!);
-            }
+                return Result<TicketDiarioDto>.Fallo(ticketCreado.Error!);
 
             var ticket = ticketCreado.Valor!;
-            ticket.FechaCreacion = DateTime.UtcNow;
             ticket.CreadoPor = dto.CreadoPor;
 
             await _autorizacionRepository.AddAsync(ticket);
             await MarcarPagoComoAplicadoAsync(pago!);
 
-            return Result<AutorizacionDto>.Ok(MapearAutorizacion(ticket));
+            return Result<TicketDiarioDto>.Ok(MapearTicketDiario(ticket));
         }
 
-        public async Task<Result<AutorizacionDto>> EmitirTarjetaRecargableAsync(CrearTarjetaRecargableDto dto)
+        public async Task<Result<TarjetaRecargableDto>> EmitirTarjetaRecargableAsync(CrearTarjetaRecargableDto dto)
         {
             var usuarioValido = await ValidarUsuarioActivoAsync(dto.UsuarioTransporteId);
-
             if (usuarioValido.EsFallo)
-            {
-                return Result<AutorizacionDto>.Fallo(usuarioValido.Error!);
-            }
+                return Result<TarjetaRecargableDto>.Fallo(usuarioValido.Error!);
 
             var autorizacionActual = await ObtenerAutorizacionActivaAsync(dto.UsuarioTransporteId);
-
             if (autorizacionActual is not null)
-            {
-                return Result<AutorizacionDto>.Fallo(
-                    ApplicationErrors.OperacionInvalida("El usuario ya tiene una autorizacion activa."));
-            }
+                return Result<TarjetaRecargableDto>.Fallo(ApplicationErrors.OperacionInvalida("El usuario ya tiene una autorizacion activa."));
 
             var pago = ConvertirPago(await _pagoRepository.GetPagoSinAutorizacion(dto.UsuarioTransporteId));
             var tarjetaCreada = AutorizacionRules.CrearTarjetaRecargable(
-                pago,
-                dto.UsuarioTransporteId,
-                dto.SaldoInicial,
-                dto.NumeroTarjeta);
+                pago, dto.UsuarioTransporteId, dto.SaldoInicial, dto.NumeroTarjeta);
 
             if (tarjetaCreada.EsFallo)
-            {
-                return Result<AutorizacionDto>.Fallo(tarjetaCreada.Error!);
-            }
+                return Result<TarjetaRecargableDto>.Fallo(tarjetaCreada.Error!);
 
             var tarjeta = tarjetaCreada.Valor!;
-            tarjeta.FechaCreacion = DateTime.UtcNow;
             tarjeta.CreadoPor = dto.CreadoPor;
 
             await _autorizacionRepository.AddAsync(tarjeta);
             await MarcarPagoComoAplicadoAsync(pago!);
 
-            return Result<AutorizacionDto>.Ok(MapearAutorizacion(tarjeta));
+            return Result<TarjetaRecargableDto>.Ok(MapearTarjeta(tarjeta));
         }
 
-        public async Task<Result<AutorizacionDto>> EmitirPermisoAsync(CrearPermisoTransporteDto dto)
+        public async Task<Result<PermisoTransporteDto>> EmitirPermisoAsync(CrearPermisoTransporteDto dto)
         {
             var usuarioValido = await ValidarUsuarioActivoAsync(dto.UsuarioTransporteId);
-
             if (usuarioValido.EsFallo)
-            {
-                return Result<AutorizacionDto>.Fallo(usuarioValido.Error!);
-            }
+                return Result<PermisoTransporteDto>.Fallo(usuarioValido.Error!);
 
             var autorizacionActual = await ObtenerAutorizacionActivaAsync(dto.UsuarioTransporteId);
-
             if (autorizacionActual is not null)
-            {
-                return Result<AutorizacionDto>.Fallo(
-                    ApplicationErrors.OperacionInvalida("El usuario ya tiene una autorizacion activa."));
-            }
+                return Result<PermisoTransporteDto>.Fallo(ApplicationErrors.OperacionInvalida("El usuario ya tiene una autorizacion activa."));
 
             var permisoCreado = AutorizacionRules.CrearPermiso(
-                dto.UsuarioTransporteId,
-                dto.CondicionInstitucional,
-                dto.FechaVencimiento);
+                dto.UsuarioTransporteId, dto.CondicionInstitucional, dto.FechaVencimiento);
 
             if (permisoCreado.EsFallo)
-            {
-                return Result<AutorizacionDto>.Fallo(permisoCreado.Error!);
-            }
+                return Result<PermisoTransporteDto>.Fallo(permisoCreado.Error!);
 
             var permiso = permisoCreado.Valor!;
-            permiso.FechaCreacion = DateTime.UtcNow;
             permiso.CreadoPor = dto.CreadoPor;
 
             await _autorizacionRepository.AddAsync(permiso);
-            return Result<AutorizacionDto>.Ok(MapearAutorizacion(permiso));
+            return Result<PermisoTransporteDto>.Ok(MapearPermiso(permiso));
         }
 
-        public async Task<Result> AnularAsync(int autorizacionId)
+        public async Task<Result> AnularAsync(int autorizacionId, AnularAutorizacionDto dto)
         {
             var validacion = ValidationGeneral.IdValido(autorizacionId, "autorizacion");
-
             if (validacion.EsFallo)
-            {
                 return Result.Fallo(validacion.Error!);
-            }
 
             var autorizacionModel = await _autorizacionRepository.GetByIdAsync(autorizacionId);
-
             if (autorizacionModel is null)
-            {
                 return Result.Fallo(ApplicationErrors.NoEncontrado("la autorizacion"));
-            }
 
             var autorizacion = ConvertirAutorizacion(autorizacionModel);
             var anulacion = AutorizacionRules.Anular(autorizacion);
-
             if (anulacion.EsFallo)
-            {
                 return anulacion;
-            }
 
-            autorizacion.FechaModificacion = DateTime.UtcNow;
+            autorizacion.EliminadoPor = dto.AnuladoPor;
             await _autorizacionRepository.UpdateAsync(autorizacion);
             return Result.Ok();
         }
 
-        private async Task<Result<UsuarioModel>> ValidarUsuarioActivoAsync(int usuarioId)
+        private async Task<Result> ValidarUsuarioActivoAsync(int usuarioId)
         {
             var validacion = ValidationGeneral.IdValido(usuarioId, "usuario");
-
             if (validacion.EsFallo)
-            {
-                return Result<UsuarioModel>.Fallo(validacion.Error!);
-            }
+                return validacion;
 
             var usuario = await _usuarioRepository.GetByIdAsync(usuarioId);
-
             if (usuario is null)
-            {
-                return Result<UsuarioModel>.Fallo(ApplicationErrors.NoEncontrado("el usuario"));
-            }
+                return Result.Fallo(ApplicationErrors.NoEncontrado("el usuario"));
 
             return UsuarioBaseRules.EstaActivo(usuario.Estado)
-                ? Result<UsuarioModel>.Ok(usuario)
-                : Result<UsuarioModel>.Fallo(DomainErrors.Accesos.UsuarioInactivo);
+                ? Result.Ok()
+                : Result.Fallo(DomainErrors.Accesos.UsuarioInactivo);
         }
 
         private async Task<AutorizacionModel?> ObtenerAutorizacionActivaAsync(int usuarioId)
@@ -244,9 +196,7 @@ namespace SGA.Application.Services
         private static PagoTransporte? ConvertirPago(PagoModel? pago)
         {
             if (pago is null)
-            {
                 return null;
-            }
 
             return new PagoTransporte
             {
@@ -266,22 +216,10 @@ namespace SGA.Application.Services
         {
             AutorizacionTransporte autorizacion = model switch
             {
-                TicketMensualModel ticket => new TicketMensual
-                {
-                    FechaInicio = ticket.FechaInicio,
-                    FechaFin = ticket.FechaFin
-                },
-                TarjetaRecargableModel tarjeta => new TarjetaRecargable
-                {
-                    NumeroTarjeta = tarjeta.NumeroTarjeta,
-                    SaldoDisponible = tarjeta.SaldoDisponible
-                },
-                PermisoTransporteModel permiso => new PermisoTransporte
-                {
-                    CondicionInstitucional = permiso.CondicionInstitucional,
-                    FechaVencimiento = permiso.FechaVencimiento
-                },
-                _ => throw new InvalidOperationException($"TipoAutorizacion desconocido: {model.GetType().Name}")
+                TicketDiarioModel ticket => new TicketDiario { FechaInicio = ticket.FechaInicio, FechaFin = ticket.FechaFin },
+                TarjetaRecargableModel tarjeta => new TarjetaRecargable { NumeroTarjeta = tarjeta.NumeroTarjeta, SaldoDisponible = tarjeta.SaldoDisponible },
+                PermisoTransporteModel permiso => new PermisoTransporte { CondicionInstitucional = permiso.CondicionInstitucional, FechaVencimiento = permiso.FechaVencimiento },
+                _ => throw new InvalidOperationException($"Tipo de autorizacion desconocido: {model.GetType().Name}")
             };
 
             autorizacion.Id = model.Id;
@@ -291,120 +229,24 @@ namespace SGA.Application.Services
             return autorizacion;
         }
 
-        private static AutorizacionDto MapearAutorizacion(AutorizacionModel autorizacion)
-        {
-            return autorizacion switch
+        private static AutorizacionResumenDto MapearResumen(AutorizacionModel a) => new(
+            a.Id, a.UsuarioTransporteId,
+            a switch
             {
-                TicketMensualModel ticket => new(
-                    ticket.Id,
-                    ticket.UsuarioTransporteId,
-                    nameof(TicketMensual),
-                    ticket.FechaEmision,
-                    ticket.Estado,
-                    ticket.FechaInicio,
-                    ticket.FechaFin,
-                    null,
-                    null,
-                    null,
-                    null),
+                TicketDiarioModel => "TicketDiario",
+                TarjetaRecargableModel => "TarjetaRecargable",
+                PermisoTransporteModel => "PermisoTransporte",
+                _ => a.GetType().Name
+            },
+            a.FechaEmision, a.Estado);
 
-                TarjetaRecargableModel tarjeta => new(
-                    tarjeta.Id,
-                    tarjeta.UsuarioTransporteId,
-                    nameof(TarjetaRecargable),
-                    tarjeta.FechaEmision,
-                    tarjeta.Estado,
-                    null,
-                    null,
-                    tarjeta.NumeroTarjeta,
-                    tarjeta.SaldoDisponible,
-                    null,
-                    null),
+        private static TicketDiarioDto MapearTicketDiario(TicketDiario t) =>
+            new(t.Id, t.UsuarioTransporteId, t.FechaEmision, t.Estado, t.FechaInicio, t.FechaFin);
 
-                PermisoTransporteModel permiso => new(
-                    permiso.Id,
-                    permiso.UsuarioTransporteId,
-                    nameof(PermisoTransporte),
-                    permiso.FechaEmision,
-                    permiso.Estado,
-                    null,
-                    null,
-                    null,
-                    null,
-                    permiso.CondicionInstitucional,
-                    permiso.FechaVencimiento),
+        private static TarjetaRecargableDto MapearTarjeta(TarjetaRecargable t) =>
+            new(t.Id, t.UsuarioTransporteId, t.FechaEmision, t.Estado, t.NumeroTarjeta, t.SaldoDisponible);
 
-                _ => new(
-                    autorizacion.Id,
-                    autorizacion.UsuarioTransporteId,
-                    autorizacion.GetType().Name,
-                    autorizacion.FechaEmision,
-                    autorizacion.Estado,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null)
-            };
-        }
-
-        private static AutorizacionDto MapearAutorizacion(AutorizacionTransporte autorizacion)
-        {
-            return autorizacion switch
-            {
-                TicketMensual ticket => new(
-                    ticket.Id,
-                    ticket.UsuarioTransporteId,
-                    nameof(TicketMensual),
-                    ticket.FechaEmision,
-                    ticket.Estado,
-                    ticket.FechaInicio,
-                    ticket.FechaFin,
-                    null,
-                    null,
-                    null,
-                    null),
-
-                TarjetaRecargable tarjeta => new(
-                    tarjeta.Id,
-                    tarjeta.UsuarioTransporteId,
-                    nameof(TarjetaRecargable),
-                    tarjeta.FechaEmision,
-                    tarjeta.Estado,
-                    null,
-                    null,
-                    tarjeta.NumeroTarjeta,
-                    tarjeta.SaldoDisponible,
-                    null,
-                    null),
-
-                PermisoTransporte permiso => new(
-                    permiso.Id,
-                    permiso.UsuarioTransporteId,
-                    nameof(PermisoTransporte),
-                    permiso.FechaEmision,
-                    permiso.Estado,
-                    null,
-                    null,
-                    null,
-                    null,
-                    permiso.CondicionInstitucional,
-                    permiso.FechaVencimiento),
-
-                _ => new(
-                    autorizacion.Id,
-                    autorizacion.UsuarioTransporteId,
-                    autorizacion.GetType().Name,
-                    autorizacion.FechaEmision,
-                    autorizacion.Estado,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null)
-            };
-        }
+        private static PermisoTransporteDto MapearPermiso(PermisoTransporte p) =>
+            new(p.Id, p.UsuarioTransporteId, p.FechaEmision, p.Estado, p.CondicionInstitucional, p.FechaVencimiento);
     }
 }

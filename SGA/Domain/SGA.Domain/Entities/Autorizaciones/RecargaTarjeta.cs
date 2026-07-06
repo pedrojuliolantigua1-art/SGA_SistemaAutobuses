@@ -1,7 +1,4 @@
-﻿using SGA.Domain.Base;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using SGA.Domain.Base;
 
 namespace SGA.Domain.Entities.Autorizaciones
 {
@@ -11,5 +8,7 @@ namespace SGA.Domain.Entities.Autorizaciones
         public int PagoTransporteId { get; set; }
         public decimal Monto { get; set; }
         public DateTime FechaHora { get; set; }
+
+        public virtual TarjetaRecargable? TarjetaRecargable { get; set; }
     }
 }

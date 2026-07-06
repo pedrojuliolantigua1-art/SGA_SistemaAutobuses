@@ -1,123 +1,211 @@
-﻿using Microsoft.Data.SqlClient;
-using SGA.Domain.Entities.Transporte;
+using Microsoft.EntityFrameworkCore;
 using SGA.Domain.Entities.Usuarios;
 using SGA.Domain.Enum;
 using SGA.Domain.Models.Usuarios;
 using SGA.Domain.Repository.Interfaces;
-using SGA.Infrastructure.Persistence.Abstractions;
-using SGA.Infrastructure.Persistence.Common;
+using SGA.Infrastructure.Persistence.Data;
 
 namespace SGA.Infrastructure.Persistence.Repositories
 {
-    public sealed class UsuarioRepository : SqlRepositoryBase, IUsuarioRepository
+    public sealed class UsuarioRepository : IUsuarioRepository
     {
-        public UsuarioRepository(ISqlConnectionfactory factory) : base(factory) { }
-
-        public async Task<UsuarioModel?> GetByIdAsync(int id)
-            => await QuerySingleOrDefaultAsync("sp_Usuario_GetById", UsuarioMapper.Map, Param("@Id", id));
+        private readonly SgaDbContext _context;
+        public UsuarioRepository(SgaDbContext context) => _context = context;
 
         public async Task<IReadOnlyList<UsuarioModel>> GetAllAsync()
-            => await QueryAsync("sp_Usuario_GetAll", UsuarioMapper.Map);
+        {
+            var estudiantes = await _context.Estudiantes.AsNoTracking()
+                .Select(e => new EstudianteModel
+                {
+                    Id = e.Id,
+                    Nombre = e.Nombre, 
+                    Apellido = e.Apellido,
+                    Correo = e.Correo,
+                    Telefono = e.Telefono,
+                    Estado = e.Estado,
+                    RolSistema = e.RolSistema,
+                    Matricula = e.Matricula,
+                    Carrera = e.Carrera
+                }).ToListAsync();
 
-        public async Task AddAsync(UsuarioTransporte entity)
-            => entity.Id = await ExecuteScalarAsync("sp_Usuario_Insert", UsuarioParameters.ParaInsertar(entity));
+            var conductores = await _context.Conductores.AsNoTracking()
+                .Select(c => new ConductorModel
+                {
+                    Id = c.Id,
+                    Nombre = c.Nombre,
+                    Apellido = c.Apellido,
+                    Correo = c.Correo,
+                    Telefono = c.Telefono,
+                    Estado = c.Estado,
+                    RolSistema = c.RolSistema,
+                    NumeroLicencia = c.NumeroLicencia,
+                    Disponible = c.Disponible
+                }).ToListAsync();
 
-        public async Task UpdateAsync(UsuarioTransporte entity)
-            => await ExecuteAsync("sp_Usuario_Update", UsuarioParameters.ParaActualizar(entity));
+            var docentes = await _context.EmpleadosDocentes.AsNoTracking()
+                .Select(d => new EmpleadoDocenteModel
+                {
+                    Id = d.Id,
+                    Nombre = d.Nombre,
+                    Apellido = d.Apellido,
+                    Correo = d.Correo,
+                    Telefono = d.Telefono,
+                    Estado = d.Estado, 
+                    RolSistema = d.RolSistema,
+                    CodigoEmpleado = d.CodigoEmpleado,
+                    Departamento = d.Departamento,
+                    Cargo = d.Cargo,
+                    Especialidad = d.Especialidad,
+                    TipoContrato = d.TipoContrato
+                }).ToListAsync();
 
-        public async Task DeleteAsync(UsuarioTransporte entity)
-            => await ExecuteAsync("sp_Usuario_Delete", UsuarioParameters.ParaEliminar(entity));
+            var administrativos = await _context.EmpleadosAdministrativos.AsNoTracking()
+                .Select(a => new EmpleadoAdministrativoModel
+                {
+                    Id = a.Id,
+                    Nombre = a.Nombre, 
+                    Apellido = a.Apellido,
+                    Correo = a.Correo,
+                    Telefono = a.Telefono,
+                    Estado = a.Estado,
+                    RolSistema = a.RolSistema,
+                    CodigoEmpleado = a.CodigoEmpleado,
+                    Departamento = a.Departamento,
+                    Cargo = a.Cargo,
+                    AreaAdministrativa = a.AreaAdministrativa
+                }).ToListAsync();
+
+            return estudiantes.Cast<UsuarioModel>()
+                .Concat(conductores)
+                .Concat(docentes)
+                .Concat(administrativos)
+                .ToList();
+        }
+
+        public async Task<UsuarioModel?> GetByIdAsync(int id)
+        {
+            var estudiante = await _context.Estudiantes.AsNoTracking()
+                .Where(e => e.Id == id)
+                .Select(e => new EstudianteModel
+                {
+                    Id = e.Id,
+                    Nombre = e.Nombre,
+                    Apellido = e.Apellido,
+                    Correo = e.Correo,
+                    Telefono = e.Telefono,
+                    Estado = e.Estado,
+                    RolSistema = e.RolSistema,
+                    Matricula = e.Matricula,
+                    Carrera = e.Carrera
+                }).FirstOrDefaultAsync();
+            if (estudiante is not null) return estudiante;
+
+            var conductor = await _context.Conductores.AsNoTracking()
+                .Where(c => c.Id == id)
+                .Select(c => new ConductorModel
+                {
+                    Id = c.Id,
+                    Nombre = c.Nombre,
+                    Apellido = c.Apellido,
+                    Correo = c.Correo,
+                    Telefono = c.Telefono,
+                    Estado = c.Estado,
+                    RolSistema = c.RolSistema,
+                    NumeroLicencia = c.NumeroLicencia,
+                    Disponible = c.Disponible
+                }).FirstOrDefaultAsync();
+            if (conductor is not null) return conductor;
+
+            var docente = await _context.EmpleadosDocentes.AsNoTracking()
+                .Where(d => d.Id == id)
+                .Select(d => new EmpleadoDocenteModel
+                {
+                    Id = d.Id,
+                    Nombre = d.Nombre,
+                    Apellido = d.Apellido,
+                    Correo = d.Correo,
+                    Telefono = d.Telefono,
+                    Estado = d.Estado,
+                    RolSistema = d.RolSistema,
+                    CodigoEmpleado = d.CodigoEmpleado,
+                    Departamento = d.Departamento,
+                    Cargo = d.Cargo,
+                    Especialidad = d.Especialidad,
+                    TipoContrato = d.TipoContrato
+                }).FirstOrDefaultAsync();
+            if (docente is not null) return docente;
+
+            var administrativo = await _context.EmpleadosAdministrativos.AsNoTracking()
+                .Where(a => a.Id == id)
+                .Select(a => new EmpleadoAdministrativoModel
+                {
+                    Id = a.Id, Nombre = a.Nombre, Apellido = a.Apellido, Correo = a.Correo,
+                    Telefono = a.Telefono, Estado = a.Estado, RolSistema = a.RolSistema,
+                    CodigoEmpleado = a.CodigoEmpleado, Departamento = a.Departamento, Cargo = a.Cargo,
+                    AreaAdministrativa = a.AreaAdministrativa
+                }).FirstOrDefaultAsync();
+
+            return administrativo;
+        }
 
         public async Task<UsuarioModel?> GetbyCorreo(string correo)
-            => await QuerySingleOrDefaultAsync("sp_Usuario_GetByCorreo", UsuarioMapper.Map, Param("@Correo", correo));
-
-        public async Task<UsuarioModel?> GetbyRol(RolUsuario rol)
-            => await QuerySingleOrDefaultAsync("sp_Usuario_GetByRol", UsuarioMapper.Map, Param("@RolSistema", (int)rol));
-
-        public async Task<bool> ValidarPassword(string correo, string passwordHash)
         {
-            var count = await ExecuteScalarAsync("sp_Usuario_ValidarPassword",
-                Param("@Correo", correo),
-                Param("@PasswordHash", passwordHash));
-            return count > 0;
+            var baseUsuario = await _context.UsuariosTransporte.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Correo == correo);
+            return baseUsuario is null ? null : await GetByIdAsync(baseUsuario.Id);
         }
-    }
 
-    internal static class UsuarioMapper
-    {
-        internal static UsuarioModel Map(SqlReaderRow r)
+        public async Task<UsuarioModel> GetbyRol(RolUsuario rol)
         {
-            var tipo = r.Str("TipoUsuario");
-
-            UsuarioModel model = tipo switch
-            {
-                "Estudiante" => new EstudianteModel
-                {
-                    Matricula = r.Str("Matricula"),
-                    Carrera = r.Str("Carrera")
-                },
-                "EmpleadoDocente" => new EmpleadoModel
-                {
-                    CodigoEmpleado = r.Str("CodigoEmpleado"),
-                    Departamento = r.Str("Departamento"),
-                    Cargo = r.Str("Cargo")
-                },
-                "EmpleadoAdministrativo" => new EmpleadoModel
-                {
-                    CodigoEmpleado = r.Str("CodigoEmpleado"),
-                    Departamento = r.Str("Departamento"),
-                    Cargo = r.Str("Cargo")
-                },
-                "Conductor" => new ConductorModel
-                {
-                    NumeroLicencia = r.Str("NumeroLicencia"),
-                    Disponible = r.Bool("Disponible")
-                },
-                _ => throw new InvalidOperationException($"TipoUsuario desconocido: {tipo}")
-            };
-
-                model.Id = r.Int("Id");
-                model.Nombre = r.Str("Nombre");
-                model.Apellido = r.Str("Apellido");
-                model.Correo = r.Str("Correo");
-                model.Telefono = r.Str("Telefono");
-                model.Estado = r.Str("Estado") ?? "Activo";
-                model.RolSistema = r.Enum<RolUsuario>("RolSistema");
-                return model;
+            var id = await _context.UsuariosTransporte.AsNoTracking()
+                .Where(u => u.RolSistema == rol)
+                .Select(u => u.Id)
+                .FirstAsync();
+            return (await GetByIdAsync(id))!;
         }
-    }
 
-    internal static class UsuarioParameters
-    {
-        internal static SqlParameter[] ParaInsertar(UsuarioTransporte u) =>
-        [
-            SqlRepositoryBase.Param("@Nombre",             u.Nombre),
-            SqlRepositoryBase.Param("@Apellido",           u.Apellido),
-            SqlRepositoryBase.Param("@Correo",             u.Correo),
-            SqlRepositoryBase.Param("@Telefono",           u.Telefono),
-            SqlRepositoryBase.Param("@TipoUsuario",        u.TipoUsuario),
-            SqlRepositoryBase.Param("@Estado",             u.Estado),
-            SqlRepositoryBase.Param("@RolSistema",         (int)u.RolSistema),
-            SqlRepositoryBase.Param("@Matricula",          (u as Estudiante)?.Matricula),
-            SqlRepositoryBase.Param("@Carrera",            (u as Estudiante)?.Carrera),
-            SqlRepositoryBase.Param("@CodigoEmpleado",     (u as Empleado)?.CodigoEmpleado),
-            SqlRepositoryBase.Param("@Departamento",       (u as Empleado)?.Departamento),
-            SqlRepositoryBase.Param("@Cargo",              (u as Empleado)?.Cargo),
-            SqlRepositoryBase.Param("@NumeroLicencia",     (u as Conductor)?.NumeroLicencia),
-            SqlRepositoryBase.Param("@Disponible",         (u as Conductor)?.Disponible ?? false),
-            SqlRepositoryBase.Param("@CreadoPor",          u.CreadoPor)
-        ];
+        public async Task<bool> ValidarPassword(string correo, string passwordHash) =>
+            await _context.UsuariosTransporte.AsNoTracking()
+                .AnyAsync(u => u.Correo == correo && u.PasswordHash == passwordHash);
 
-        internal static SqlParameter[] ParaActualizar(UsuarioTransporte u) =>
-        [
-            SqlRepositoryBase.Param("@Id", u.Id),
-            ..ParaInsertar(u)
-        ];
+        public async Task<UsuarioModel?> GetByMatricula(string matricula) =>
+            await _context.Estudiantes.AsNoTracking()
+                .Where(e => e.Matricula == matricula)
+                .Select(e => new EstudianteModel
+                {
+                    Id = e.Id, Nombre = e.Nombre, Apellido = e.Apellido, Correo = e.Correo,
+                    Telefono = e.Telefono, Estado = e.Estado, RolSistema = e.RolSistema,
+                    Matricula = e.Matricula, Carrera = e.Carrera
+                }).FirstOrDefaultAsync();
 
-        internal static SqlParameter[] ParaEliminar(UsuarioTransporte u) =>
-        [
-            SqlRepositoryBase.Param("@Id",           u.Id),
-            SqlRepositoryBase.Param("@EliminadoPor", u.EliminadoPor)
-        ];
+        public async Task<UsuarioModel?> GetByNumeroLicencia(string numeroLicencia) =>
+            await _context.Conductores.AsNoTracking()
+                .Where(c => c.NumeroLicencia == numeroLicencia)
+                .Select(c => new ConductorModel
+                {
+                    Id = c.Id, Nombre = c.Nombre, Apellido = c.Apellido, Correo = c.Correo,
+                    Telefono = c.Telefono, Estado = c.Estado, RolSistema = c.RolSistema,
+                    NumeroLicencia = c.NumeroLicencia, Disponible = c.Disponible
+                }).FirstOrDefaultAsync();
+
+        public async Task AddAsync(UsuarioTransporte entity)
+        {
+            await _context.AddAsync(entity);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateAsync(UsuarioTransporte entity)
+        {
+            _context.Update(entity);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(UsuarioTransporte entity)
+        {
+            entity.Eliminado = true;
+            entity.FechaEliminacion = DateTime.UtcNow;
+            _context.Update(entity);
+            await _context.SaveChangesAsync();
+        }
     }
 }

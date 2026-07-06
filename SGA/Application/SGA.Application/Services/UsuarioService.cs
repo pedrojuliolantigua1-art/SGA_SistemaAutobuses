@@ -1,13 +1,14 @@
-﻿using SGA.Application.Common;
+using SGA.Application.Common;
+using SGA.Application.DTOs.Common;
 using SGA.Application.DTOs.Usuarios;
 using SGA.Application.Interfaces.Services;
 using SGA.Domain.Entities.Transporte;
 using SGA.Domain.Entities.Usuarios;
 using SGA.Domain.Error;
+using SGA.Domain.Models.Transporte;
 using SGA.Domain.Models.Usuarios;
 using SGA.Domain.Repository.Interfaces;
 using SGA.Domain.Rules;
-using SGA.Domain.Validation;
 
 namespace SGA.Application.Services
 {
@@ -18,234 +19,383 @@ namespace SGA.Application.Services
         public UsuarioService(IUsuarioRepository usuarioRepository)
             => _usuarioRepository = usuarioRepository;
 
-        public async Task<Result<IReadOnlyList<UsuarioDto>>> ListarTodosAsync()
+        public async Task<Result<IReadOnlyList<UsuarioResumenDto>>> ListarTodosAsync()
         {
             var usuarios = await _usuarioRepository.GetAllAsync();
-            return Result<IReadOnlyList<UsuarioDto>>.Ok(usuarios.Select(Mapear).ToList());
+            return Result<IReadOnlyList<UsuarioResumenDto>>.Ok(usuarios.Select(MapearResumen).ToList());
         }
 
-        public async Task<Result<UsuarioDto>> ObtenerPorIdAsync(int id)
+        public async Task<Result<UsuarioResumenDto>> ObtenerPorIdAsync(int id)
         {
-            var validacion = ValidationGeneral.IdValido(id, "usuario");
-
-            if (validacion.EsFallo)
-            {
-                return Result<UsuarioDto>.Fallo(validacion.Error!);
-            }
-
             var usuario = await _usuarioRepository.GetByIdAsync(id);
             return usuario is null
-                ? Result<UsuarioDto>.Fallo(ApplicationErrors.NoEncontrado("el usuario"))
-                : Result<UsuarioDto>.Ok(Mapear(usuario));
+                ? Result<UsuarioResumenDto>.Fallo(ApplicationErrors.NoEncontrado("el usuario"))
+                : Result<UsuarioResumenDto>.Ok(MapearResumen(usuario));
         }
 
-        public async Task<Result<UsuarioDto>> ObtenerPorCorreoAsync(string correo)
+        public async Task<Result<UsuarioResumenDto>> ObtenerPorCorreoAsync(string correo)
         {
             var validacion = UsuarioBaseRules.ValidarCorreoInstitucional(correo);
-
             if (validacion.EsFallo)
-            {
-                return Result<UsuarioDto>.Fallo(validacion.Error!);
-            }
+                return Result<UsuarioResumenDto>.Fallo(validacion.Error!);
 
             var usuario = await _usuarioRepository.GetbyCorreo(correo);
             return usuario is null
-                ? Result<UsuarioDto>.Fallo(ApplicationErrors.NoEncontrado("el usuario"))
-                : Result<UsuarioDto>.Ok(Mapear(usuario));
+                ? Result<UsuarioResumenDto>.Fallo(ApplicationErrors.NoEncontrado("el usuario"))
+                : Result<UsuarioResumenDto>.Ok(MapearResumen(usuario));
         }
 
-        public async Task<Result<UsuarioDto>> RegistrarAsync(CrearUsuarioDto dto)
+        public async Task<Result<EstudianteDto>> ObtenerEstudiantePorMatriculaAsync(string matricula)
         {
-            var entidadCreada = ConstruirEntidad(dto);
-
-            if (entidadCreada.EsFallo)
-            {
-                return Result<UsuarioDto>.Fallo(entidadCreada.Error!);
-            }
-
-            var entity = entidadCreada.Valor!;
-            var validacion = ValidationGeneral.Combinar(
-                ValidarUsuario(entity),
-                ValidationGeneral.Requerido(dto.PasswordHash, "password"));
-
-            if (validacion.EsFallo)
-            {
-                return Result<UsuarioDto>.Fallo(validacion.Error!);
-            }
-
-            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo!);
-            if (existente is not null)
-                return Result<UsuarioDto>.Fallo(ApplicationErrors.OperacionInvalida("Ya existe un usuario con ese correo."));
-
-            await _usuarioRepository.AddAsync(entity);
-            return Result<UsuarioDto>.Ok(MapearEntidad(entity));
+            var usuario = await _usuarioRepository.GetByMatricula(matricula);
+            return usuario is not EstudianteModel estudiante
+                ? Result<EstudianteDto>.Fallo(ApplicationErrors.NoEncontrado("el estudiante"))
+                : Result<EstudianteDto>.Ok(new EstudianteDto(
+                    estudiante.Id, estudiante.Nombre, estudiante.Apellido, estudiante.Correo, estudiante.Telefono,
+                    estudiante.Estado, estudiante.RolSistema, estudiante.Matricula, estudiante.Carrera));
         }
 
-        public async Task<Result<UsuarioDto>> ActualizarAsync(ActualizarUsuarioDto dto)
+        public async Task<Result<ConductorDto>> ObtenerConductorPorLicenciaAsync(string numeroLicencia)
         {
-            var idValido = ValidationGeneral.IdValido(dto.Id, "usuario");
-
-            if (idValido.EsFallo)
-            {
-                return Result<UsuarioDto>.Fallo(idValido.Error!);
-            }
-
-            var existe = await _usuarioRepository.GetByIdAsync(dto.Id);
-            if (existe is null) return Result<UsuarioDto>.Fallo(ApplicationErrors.NoEncontrado("el usuario"));
-
-            var entity = ConvertirAEntidad(existe);
-            entity.Nombre = dto.Nombre;
-            entity.Apellido = dto.Apellido;
-            entity.Correo = dto.Correo;
-            entity.Telefono = dto.Telefono;
-            entity.Estado = dto.Estado;
-            entity.FechaModificacion = DateTime.UtcNow;
-
-            var validacion = ValidationGeneral.Combinar(
-                ValidarUsuario(entity),
-                ValidationGeneral.Requerido(dto.Estado, "estado"));
-
-            if (validacion.EsFallo)
-            {
-                return Result<UsuarioDto>.Fallo(validacion.Error!);
-            }
-
-            await _usuarioRepository.UpdateAsync(entity);
-            return Result<UsuarioDto>.Ok(MapearEntidad(entity));
-        }
-
-        public async Task<Result> DesactivarAsync(int id, string? eliminadoPor)
-        {
-            var validacion = ValidationGeneral.IdValido(id, "usuario");
-
-            if (validacion.EsFallo)
-            {
-                return Result.Fallo(validacion.Error!);
-            }
-
-            var existe = await _usuarioRepository.GetByIdAsync(id);
-            if (existe is null) return Result.Fallo(ApplicationErrors.NoEncontrado("el usuario"));
-
-            var entity = new Estudiante { Id = id, EliminadoPor = eliminadoPor };
-            await _usuarioRepository.DeleteAsync(entity);
-            return Result.Ok();
+            var usuario = await _usuarioRepository.GetByNumeroLicencia(numeroLicencia);
+            return usuario is not ConductorModel conductor
+                ? Result<ConductorDto>.Fallo(ApplicationErrors.NoEncontrado("el conductor"))
+                : Result<ConductorDto>.Ok(new ConductorDto(
+                    conductor.Id, conductor.Nombre, conductor.Apellido, conductor.Correo, conductor.Telefono,
+                    conductor.Estado, conductor.NumeroLicencia, conductor.Disponible));
         }
 
         public async Task<Result<bool>> ValidarPasswordAsync(AutenticarDto dto)
         {
-            var validacion = ValidationGeneral.Combinar(
-                UsuarioBaseRules.ValidarCorreoInstitucional(dto.Correo),
-                ValidationGeneral.Requerido(dto.PasswordHash, "password"));
-
+            var validacion = UsuarioBaseRules.ValidarCorreoInstitucional(dto.Correo);
             if (validacion.EsFallo)
-            {
                 return Result<bool>.Fallo(validacion.Error!);
-            }
 
             var valido = await _usuarioRepository.ValidarPassword(dto.Correo, dto.PasswordHash);
             return Result<bool>.Ok(valido);
         }
 
-        private static Result<UsuarioTransporte> ConstruirEntidad(CrearUsuarioDto dto)
+        public async Task<Result<EstudianteDto>> RegistrarEstudianteAsync(CrearEstudianteDto dto)
         {
-            UsuarioTransporte entity = dto.TipoUsuario switch
+            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
+            if (existente is not null)
+                return Result<EstudianteDto>.Fallo(ApplicationErrors.OperacionInvalida("Ya existe un usuario con ese correo."));
+
+            var estudiante = new Estudiante
             {
-                "Estudiante" => new Estudiante { Matricula = dto.Matricula, Carrera = dto.Carrera },
-                "EmpleadoDocente" => new EmpleadoDocente
-                {
-                    CodigoEmpleado = dto.CodigoEmpleado,
-                    Departamento = dto.Departamento,
-                    Cargo = dto.Cargo
-                },
-                "EmpleadoAdministrativo" => new EmpleadoAdministrativo
-                {
-                    CodigoEmpleado = dto.CodigoEmpleado,
-                    Departamento = dto.Departamento,
-                    Cargo = dto.Cargo
-                },
-                "Conductor" => new Conductor { NumeroLicencia = dto.NumeroLicencia, Disponible = dto.Disponible },
-                _ => null!
+                Nombre = dto.Nombre,
+                Apellido = dto.Apellido,
+                Correo = dto.Correo,
+                Telefono = dto.Telefono,
+                PasswordHash = dto.PasswordHash,
+                Matricula = dto.Matricula,
+                Carrera = dto.Carrera,
+                TipoUsuario = "Estudiante",
+                RolSistema = SGA.Domain.Enum.RolUsuario.Estudiante,
+                CreadoPor = dto.CreadoPor
             };
 
-            if (entity is null)
-            {
-                return Result<UsuarioTransporte>.Fallo(
-                    DomainErrors.General.FormatoInvalido(
-                        "tipo de usuario",
-                        "Estudiante, EmpleadoDocente, EmpleadoAdministrativo o Conductor"));
-            }
+            var validacion = EstudianteRules.Validar(estudiante);
+            if (validacion.EsFallo)
+                return Result<EstudianteDto>.Fallo(validacion.Error!);
 
-            entity.Nombre = dto.Nombre;
-            entity.Apellido = dto.Apellido;
-            entity.Correo = dto.Correo;
-            entity.Telefono = dto.Telefono;
-            entity.TipoUsuario = dto.TipoUsuario;
-            entity.Estado = "Activo";
-            entity.RolSistema = dto.RolSistema;
-            entity.PasswordHash = dto.PasswordHash;
-            entity.FechaCreacion = DateTime.UtcNow;
-            entity.CreadoPor = dto.CreadoPor;
-            return Result<UsuarioTransporte>.Ok(entity);
+            await _usuarioRepository.AddAsync(estudiante);
+            return Result<EstudianteDto>.Ok(MapearEstudiante(estudiante));
         }
 
-        private static Result ValidarUsuario(UsuarioTransporte usuario) => usuario switch
+        public async Task<Result<EstudianteDto>> ActualizarEstudianteAsync(int id, ActualizarEstudianteDto dto)
         {
-            Estudiante estudiante => EstudianteRules.Validar(estudiante),
-            Empleado empleado => EmpleadoRules.Validar(empleado),
-            Conductor conductor => ConductorRules.Validar(conductor),
-            _ => UsuarioBaseRules.ValidarDatosBase(usuario)
-        };
+            var actual = await _usuarioRepository.GetByIdAsync(id);
+            if (actual is not EstudianteModel)
+                return Result<EstudianteDto>.Fallo(ApplicationErrors.NoEncontrado("el estudiante"));
 
-        private static UsuarioTransporte ConvertirAEntidad(UsuarioModel m)
-        {
-            UsuarioTransporte entity = m switch
+            var estudiante = new Estudiante
             {
-                EstudianteModel estudiante => new Estudiante
-                {
-                    Matricula = estudiante.Matricula,
-                    Carrera = estudiante.Carrera,
-                    TipoUsuario = "Estudiante"
-                },
-                EmpleadoModel empleado => new Empleado
-                {
-                    CodigoEmpleado = empleado.CodigoEmpleado,
-                    Departamento = empleado.Departamento,
-                    Cargo = empleado.Cargo,
-                    TipoUsuario = "Empleado"
-                },
-                ConductorModel conductor => new Conductor
-                {
-                    NumeroLicencia = conductor.NumeroLicencia,
-                    Disponible = conductor.Disponible,
-                    TipoUsuario = "Conductor"
-                },
-                _ => new Estudiante { TipoUsuario = m.GetType().Name }
+                Id = id,
+                Nombre = dto.Nombre,
+                Apellido = dto.Apellido,
+                Correo = dto.Correo,
+                Telefono = dto.Telefono,
+                Matricula = dto.Matricula,
+                Carrera = dto.Carrera,
+                TipoUsuario = "Estudiante",
+                Estado = actual.Estado,
+                RolSistema = actual.RolSistema
             };
 
-            entity.Id = m.Id;
-            entity.Nombre = m.Nombre;
-            entity.Apellido = m.Apellido;
-            entity.Correo = m.Correo;
-            entity.Telefono = m.Telefono;
-            entity.Estado = m.Estado;
-            entity.RolSistema = m.RolSistema;
-            return entity;
+            var validacion = EstudianteRules.Validar(estudiante);
+            if (validacion.EsFallo)
+                return Result<EstudianteDto>.Fallo(validacion.Error!);
+
+            await _usuarioRepository.UpdateAsync(estudiante);
+            return Result<EstudianteDto>.Ok(MapearEstudiante(estudiante));
         }
 
-        private static UsuarioDto Mapear(UsuarioModel m) => m switch
+        public async Task<Result<EmpleadoDocenteDto>> RegistrarEmpleadoDocenteAsync(CrearEmpleadoDocenteDto dto)
         {
-            EstudianteModel e => new(e.Id, e.Nombre, e.Apellido, e.Correo, e.Telefono, e.Estado, "Estudiante", e.RolSistema, e.Matricula, e.Carrera, null, null, null, null, null),
-            EmpleadoModel em => new(em.Id, em.Nombre, em.Apellido, em.Correo, em.Telefono, em.Estado, "Empleado", em.RolSistema, null, null, em.CodigoEmpleado, em.Departamento, em.Cargo, null, null),
-            ConductorModel c => new(c.Id, c.Nombre, c.Apellido, c.Correo, c.Telefono, c.Estado, "Conductor", c.RolSistema, null, null, null, null, null, c.NumeroLicencia, c.Disponible),
-            _ => new(m.Id, m.Nombre, m.Apellido, m.Correo, m.Telefono, m.Estado, m.GetType().Name, m.RolSistema, null, null, null, null, null, null, null)
+            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
+            if (existente is not null)
+                return Result<EmpleadoDocenteDto>.Fallo(ApplicationErrors.OperacionInvalida("Ya existe un usuario con ese correo."));
+
+            var docente = new EmpleadoDocente
+            {
+                Nombre = dto.Nombre,
+                Apellido = dto.Apellido,
+                Correo = dto.Correo,
+                Telefono = dto.Telefono,
+                PasswordHash = dto.PasswordHash,
+                CodigoEmpleado = dto.CodigoEmpleado,
+                Departamento = dto.Departamento,
+                Cargo = dto.Cargo,
+                Especialidad = dto.Especialidad,
+                TipoContrato = dto.TipoContrato,
+                TipoUsuario = "EmpleadoDocente",
+                RolSistema = SGA.Domain.Enum.RolUsuario.Empleado,
+                CreadoPor = dto.CreadoPor
+            };
+
+            var validacion = EmpleadoRules.Validar(docente);
+            if (validacion.EsFallo)
+                return Result<EmpleadoDocenteDto>.Fallo(validacion.Error!);
+
+            await _usuarioRepository.AddAsync(docente);
+            return Result<EmpleadoDocenteDto>.Ok(MapearEmpleadoDocente(docente));
+        }
+
+        public async Task<Result<EmpleadoDocenteDto>> ActualizarEmpleadoDocenteAsync(int id, ActualizarEmpleadoDocenteDto dto)
+        {
+            var actual = await _usuarioRepository.GetByIdAsync(id);
+            if (actual is not EmpleadoDocenteModel)
+                return Result<EmpleadoDocenteDto>.Fallo(ApplicationErrors.NoEncontrado("el empleado docente"));
+
+            var docente = new EmpleadoDocente
+            {
+                Id = id,
+                Nombre = dto.Nombre,
+                Apellido = dto.Apellido,
+                Correo = dto.Correo,
+                Telefono = dto.Telefono,
+                CodigoEmpleado = dto.CodigoEmpleado,
+                Departamento = dto.Departamento,
+                Cargo = dto.Cargo,
+                Especialidad = dto.Especialidad,
+                TipoContrato = dto.TipoContrato,
+                TipoUsuario = "EmpleadoDocente",
+                Estado = actual.Estado,
+                RolSistema = actual.RolSistema
+            };
+
+            var validacion = EmpleadoRules.Validar(docente);
+            if (validacion.EsFallo)
+                return Result<EmpleadoDocenteDto>.Fallo(validacion.Error!);
+
+            await _usuarioRepository.UpdateAsync(docente);
+            return Result<EmpleadoDocenteDto>.Ok(MapearEmpleadoDocente(docente));
+        }
+
+        public async Task<Result<EmpleadoAdministrativoDto>> RegistrarEmpleadoAdministrativoAsync(CrearEmpleadoAdministrativoDto dto)
+        {
+            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
+            if (existente is not null)
+                return Result<EmpleadoAdministrativoDto>.Fallo(ApplicationErrors.OperacionInvalida("Ya existe un usuario con ese correo."));
+
+            var administrativo = new EmpleadoAdministrativo
+            {
+                Nombre = dto.Nombre,
+                Apellido = dto.Apellido,
+                Correo = dto.Correo,
+                Telefono = dto.Telefono,
+                PasswordHash = dto.PasswordHash,
+                CodigoEmpleado = dto.CodigoEmpleado,
+                Departamento = dto.Departamento,
+                Cargo = dto.Cargo,
+                AreaAdministrativa = dto.AreaAdministrativa,
+                TipoUsuario = "EmpleadoAdministrativo",
+                RolSistema = SGA.Domain.Enum.RolUsuario.Empleado,
+                CreadoPor = dto.CreadoPor
+            };
+
+            var validacion = EmpleadoRules.Validar(administrativo);
+            if (validacion.EsFallo)
+                return Result<EmpleadoAdministrativoDto>.Fallo(validacion.Error!);
+
+            await _usuarioRepository.AddAsync(administrativo);
+            return Result<EmpleadoAdministrativoDto>.Ok(MapearEmpleadoAdministrativo(administrativo));
+        }
+
+        public async Task<Result<EmpleadoAdministrativoDto>> ActualizarEmpleadoAdministrativoAsync(int id, ActualizarEmpleadoAdministrativoDto dto)
+        {
+            var actual = await _usuarioRepository.GetByIdAsync(id);
+            if (actual is not EmpleadoAdministrativoModel)
+                return Result<EmpleadoAdministrativoDto>.Fallo(ApplicationErrors.NoEncontrado("el empleado administrativo"));
+
+            var administrativo = new EmpleadoAdministrativo
+            {
+                Id = id,
+                Nombre = dto.Nombre,
+                Apellido = dto.Apellido,
+                Correo = dto.Correo,
+                Telefono = dto.Telefono,
+                CodigoEmpleado = dto.CodigoEmpleado,
+                Departamento = dto.Departamento,
+                Cargo = dto.Cargo,
+                AreaAdministrativa = dto.AreaAdministrativa,
+                TipoUsuario = "EmpleadoAdministrativo",
+                Estado = actual.Estado,
+                RolSistema = actual.RolSistema
+            };
+
+            var validacion = EmpleadoRules.Validar(administrativo);
+            if (validacion.EsFallo)
+                return Result<EmpleadoAdministrativoDto>.Fallo(validacion.Error!);
+
+            await _usuarioRepository.UpdateAsync(administrativo);
+            return Result<EmpleadoAdministrativoDto>.Ok(MapearEmpleadoAdministrativo(administrativo));
+        }
+
+        public async Task<Result<ConductorDto>> RegistrarConductorAsync(CrearConductorDto dto)
+        {
+            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
+            if (existente is not null)
+                return Result<ConductorDto>.Fallo(ApplicationErrors.OperacionInvalida("Ya existe un usuario con ese correo."));
+
+            var conductor = new Conductor
+            {
+                Nombre = dto.Nombre,
+                Apellido = dto.Apellido,
+                Correo = dto.Correo,
+                Telefono = dto.Telefono,
+                PasswordHash = dto.PasswordHash,
+                NumeroLicencia = dto.NumeroLicencia,
+                Disponible = true,
+                TipoUsuario = "Conductor",
+                RolSistema = SGA.Domain.Enum.RolUsuario.Conductor,
+                CreadoPor = dto.CreadoPor
+            };
+
+            var validacion = ConductorRules.Validar(conductor);
+            if (validacion.EsFallo)
+                return Result<ConductorDto>.Fallo(validacion.Error!);
+
+            await _usuarioRepository.AddAsync(conductor);
+            return Result<ConductorDto>.Ok(MapearConductor(conductor));
+        }
+
+        public async Task<Result<ConductorDto>> ActualizarConductorAsync(int id, ActualizarConductorDto dto)
+        {
+            var actual = await _usuarioRepository.GetByIdAsync(id);
+            if (actual is not ConductorModel conductorActual)
+                return Result<ConductorDto>.Fallo(ApplicationErrors.NoEncontrado("el conductor"));
+
+            var conductor = new Conductor
+            {
+                Id = id,
+                Nombre = dto.Nombre,
+                Apellido = dto.Apellido,
+                Correo = dto.Correo,
+                Telefono = dto.Telefono,
+                NumeroLicencia = dto.NumeroLicencia,
+                Disponible = conductorActual.Disponible,
+                TipoUsuario = "Conductor",
+                Estado = actual.Estado,
+                RolSistema = actual.RolSistema
+            };
+
+            var validacion = ConductorRules.Validar(conductor);
+            if (validacion.EsFallo)
+                return Result<ConductorDto>.Fallo(validacion.Error!);
+
+            await _usuarioRepository.UpdateAsync(conductor);
+            return Result<ConductorDto>.Ok(MapearConductor(conductor));
+        }
+
+        public async Task<Result<ConductorDto>> CambiarDisponibilidadAsync(int id, CambiarDisponibilidadConductorDto dto)
+        {
+            var actual = await _usuarioRepository.GetByIdAsync(id);
+            if (actual is not ConductorModel conductorActual)
+                return Result<ConductorDto>.Fallo(ApplicationErrors.NoEncontrado("el conductor"));
+
+            var conductor = new Conductor
+            {
+                Id = id,
+                Nombre = conductorActual.Nombre,
+                Apellido = conductorActual.Apellido,
+                Correo = conductorActual.Correo,
+                Telefono = conductorActual.Telefono,
+                NumeroLicencia = conductorActual.NumeroLicencia,
+                Disponible = dto.Disponible,
+                TipoUsuario = "Conductor",
+                Estado = conductorActual.Estado,
+                RolSistema = conductorActual.RolSistema
+            };
+
+            await _usuarioRepository.UpdateAsync(conductor);
+            return Result<ConductorDto>.Ok(MapearConductor(conductor));
+        }
+
+        public async Task<Result> EliminarAsync(int id, EliminarDto dto)
+        {
+            var actual = await _usuarioRepository.GetByIdAsync(id);
+            if (actual is null)
+                return Result.Fallo(ApplicationErrors.NoEncontrado("el usuario"));
+
+            var entity = ConvertirEntidadVacia(actual, id);
+            entity.Eliminado = true;
+            entity.FechaEliminacion = DateTime.UtcNow;
+            entity.EliminadoPor = dto.EliminadoPor;
+
+            await _usuarioRepository.DeleteAsync(entity);
+            return Result.Ok();
+        }
+
+        public async Task<Result> RestaurarAsync(int id, RestaurarDto dto)
+        {
+            var actual = await _usuarioRepository.GetByIdAsync(id);
+            if (actual is null)
+                return Result.Fallo(ApplicationErrors.NoEncontrado("el usuario"));
+
+            var entity = ConvertirEntidadVacia(actual, id);
+            entity.Eliminado = false;
+            entity.FechaEliminacion = null;
+            entity.EliminadoPor = null;
+
+            await _usuarioRepository.UpdateAsync(entity);
+            return Result.Ok();
+        }
+
+        private static UsuarioTransporte ConvertirEntidadVacia(UsuarioModel m, int id) => m switch
+        {
+            EstudianteModel => new Estudiante { Id = id },
+            ConductorModel => new Conductor { Id = id },
+            EmpleadoDocenteModel => new EmpleadoDocente { Id = id },
+            EmpleadoAdministrativoModel => new EmpleadoAdministrativo { Id = id },
+            EmpleadoModel => new Empleado { Id = id },
+            _ => new Estudiante { Id = id }
         };
 
-        private static UsuarioDto MapearEntidad(UsuarioTransporte e) => e switch
-        {
-            Estudiante est => new(e.Id, e.Nombre, e.Apellido, e.Correo, e.Telefono, e.Estado, "Estudiante", e.RolSistema, est.Matricula, est.Carrera, null, null, null, null, null),
-            Empleado em => new(e.Id, e.Nombre, e.Apellido, e.Correo, e.Telefono, e.Estado, e.TipoUsuario ?? "Empleado", e.RolSistema, null, null, em.CodigoEmpleado, em.Departamento, em.Cargo, null, null),
-            Conductor c => new(e.Id, e.Nombre, e.Apellido, e.Correo, e.Telefono, e.Estado, "Conductor", e.RolSistema, null, null, null, null, null, c.NumeroLicencia, c.Disponible),
-            _ => new(e.Id, e.Nombre, e.Apellido, e.Correo, e.Telefono, e.Estado, e.TipoUsuario ?? "Usuario", e.RolSistema, null, null, null, null, null, null, null)
-        };
+        private static UsuarioResumenDto MapearResumen(UsuarioModel m) => new(
+            m.Id, m.Nombre, m.Apellido, m.Correo, m.Telefono, m.Estado,
+            m switch
+            {
+                EstudianteModel => "Estudiante",
+                ConductorModel => "Conductor",
+                EmpleadoDocenteModel => "EmpleadoDocente",
+                EmpleadoAdministrativoModel => "EmpleadoAdministrativo",
+                EmpleadoModel => "Empleado",
+                _ => m.GetType().Name
+            },
+            m.RolSistema);
+
+        private static EstudianteDto MapearEstudiante(Estudiante e) =>
+            new(e.Id, e.Nombre, e.Apellido, e.Correo, e.Telefono, e.Estado, e.RolSistema, e.Matricula, e.Carrera);
+
+        private static EmpleadoDocenteDto MapearEmpleadoDocente(EmpleadoDocente e) =>
+            new(e.Id, e.Nombre, e.Apellido, e.Correo, e.Telefono, e.Estado, e.CodigoEmpleado, e.Departamento, e.Cargo, e.Especialidad, e.TipoContrato);
+
+        private static EmpleadoAdministrativoDto MapearEmpleadoAdministrativo(EmpleadoAdministrativo e) =>
+            new(e.Id, e.Nombre, e.Apellido, e.Correo, e.Telefono, e.Estado, e.CodigoEmpleado, e.Departamento, e.Cargo, e.AreaAdministrativa);
+
+        private static ConductorDto MapearConductor(Conductor c) =>
+            new(c.Id, c.Nombre, c.Apellido, c.Correo, c.Telefono, c.Estado, c.NumeroLicencia, c.Disponible);
     }
 }

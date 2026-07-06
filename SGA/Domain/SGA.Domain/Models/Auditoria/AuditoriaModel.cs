@@ -1,4 +1,4 @@
-﻿namespace SGA.Domain.Models.Auditoria
+namespace SGA.Domain.Models.Auditoria
 {
     public class AuditoriaModel
     {
@@ -9,5 +9,7 @@
         public string? EntidadId { get; set; }
         public string? Detalle { get; set; }
         public DateTime FechaHora { get; set; }
+
+        public string? UsuarioNombre { get; set; }
     }
 }

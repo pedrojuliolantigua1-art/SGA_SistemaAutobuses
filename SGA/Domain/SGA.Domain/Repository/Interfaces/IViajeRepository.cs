@@ -34,6 +34,14 @@ namespace SGA.Domain.Repository.Interfaces
         /// <returns></returns>
         Task<IReadOnlyList<ViajeModel>> GetbyPeriodo(DateTime desde, DateTime hasta);
 
+        Task<IReadOnlyList<ViajeModel>> GetActivos();
+
+        Task<IReadOnlyList<ViajeModel>> GetProgramados();
+
+        Task<IReadOnlyList<ViajeModel>> GetbyRuta(int rutaId);
+
+        Task<IReadOnlyList<ViajeModel>> GetbyAutobus(int autobusId);
+
         /// <summary>
         /// anade una incidencia al viaje, si no hay incidencias retorna una lista vacia
         /// </summary>

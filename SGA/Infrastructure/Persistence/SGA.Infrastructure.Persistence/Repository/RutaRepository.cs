@@ -1,72 +1,61 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using SGA.Domain.Entities.Transporte;
 using SGA.Domain.Models.Transporte;
 using SGA.Domain.Repository.Interfaces;
-using SGA.Infrastructure.Persistence.Abstractions;
 using SGA.Infrastructure.Persistence.Common;
+using SGA.Infrastructure.Persistence.Data;
+using System.Linq.Expressions;
 
 namespace SGA.Infrastructure.Persistence.Repositories
 {
-    public sealed class RutaRepository : SqlRepositoryBase, IRutaRepository
+    public sealed class RutaRepository : BaseRepository<Ruta, RutaModel>, IRutaRepository
     {
-        public RutaRepository(ISqlConnectionfactory factory) : base(factory) { }
+        public RutaRepository(SgaDbContext context) : base(context) { }
 
-        public async Task<RutaModel?> GetByIdAsync(int id)
-            => await QuerySingleOrDefaultAsync("sp_Ruta_GetById", RutaMapper.Map, Param("@Id", id));
+        protected override Expression<Func<Ruta, RutaModel>> Proyeccion => r =>
+            new RutaModel { 
+                Id = r.Id,
+                Nombre = r.Nombre,
+                Descripcion = r.Descripcion,
+                Activa = r.Activa };
 
-        public async Task<IReadOnlyList<RutaModel>> GetAllAsync()
-            => await QueryAsync("sp_Ruta_GetAll", RutaMapper.Map);
-
-        public async Task<IReadOnlyList<RutaModel>> GetActivas()
-            => await QueryAsync("sp_Ruta_GetActivas", RutaMapper.Map);
+        public async Task<IReadOnlyList<RutaModel>> GetActivas() =>
+            await Set.AsNoTracking().Where(r => r.Activa).Select(Proyeccion).ToListAsync();
 
         public async Task<IReadOnlyList<ParadaModel>> GetParadas(int rutaId)
-            => await QueryAsync("sp_Parada_GetByRuta", ParadaMapper.Map, Param("@RutaId", rutaId));
+        {
+            var ruta = await Set.AsNoTracking()
+                .Include(r => r.Paradas.OrderBy(p => p.Orden))
+                .FirstOrDefaultAsync(r => r.Id == rutaId);
+
+            if (ruta is null) return new List<ParadaModel>();
+
+            return ruta.Paradas.Select(p => new ParadaModel
+            {
+                Id = p.Id,
+                RutaId = p.RutaId,
+                Nombre = p.Nombre,
+                Referencia = p.Referencia,
+                Orden = p.Orden
+            }).ToList();
+        }
 
         public async Task<IReadOnlyList<HorarioModel>> GetHorarios(int rutaId)
-            => await QueryAsync("sp_HorarioRuta_GetByRuta", HorarioMapper.Map, Param("@RutaId", rutaId));
-
-        public async Task AddAsync(Ruta entity)
-            => entity.Id = await ExecuteScalarAsync("sp_Ruta_Insert", RutaParameters.ParaInsertar(entity));
-
-        public async Task UpdateAsync(Ruta entity)
-            => await ExecuteAsync("sp_Ruta_Update", RutaParameters.ParaActualizar(entity));
-
-        public async Task DeleteAsync(Ruta entity)
-            => await ExecuteAsync("sp_Ruta_Delete", RutaParameters.ParaEliminar(entity));
-    }
-
-    internal static class RutaMapper
-    {
-        internal static RutaModel Map(SqlReaderRow r) => new()
         {
-            Id = r.Int("Id"),
-            Nombre = r.Str("Nombre"),
-            Descripcion = r.Str("Descripcion"),
-            Activa = r.Bool("Activa")
-        };
-    }
+            var ruta = await Set.AsNoTracking()
+                .Include(r => r.Horarios.Where(h => h.Activo))
+                .FirstOrDefaultAsync(r => r.Id == rutaId);
 
-    internal static class RutaParameters
-    {
-        internal static SqlParameter[] ParaInsertar(Ruta r) =>
-        [
-            SqlRepositoryBase.Param("@Nombre", r.Nombre),
-            SqlRepositoryBase.Param("@Descripcion", r.Descripcion),
-            SqlRepositoryBase.Param("@Activa", r.Activa),
-            SqlRepositoryBase.Param("@CreadoPor",r.CreadoPor)
-        ];
+            if (ruta is null) return new List<HorarioModel>();
 
-        internal static SqlParameter[] ParaActualizar(Ruta r) =>
-        [
-            SqlRepositoryBase.Param("@Id", r.Id),
-            ..ParaInsertar(r)
-        ];
-
-        internal static SqlParameter[] ParaEliminar(Ruta r) =>
-        [
-            SqlRepositoryBase.Param("@Id", r.Id),
-            SqlRepositoryBase.Param("@EliminadoPor", r.EliminadoPor)
-        ];
+            return ruta.Horarios.Select(h => new HorarioModel
+            {
+                Id = h.Id,
+                RutaId = h.RutaId,
+                HoraSalida = h.HoraSalida,
+                HoraLlegadaEstimada = h.HoraLlegadaEstimada, 
+                Activo = h.Activo
+            }).ToList();
+        }
     }
 }

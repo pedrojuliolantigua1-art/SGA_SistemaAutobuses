@@ -15,7 +15,7 @@ namespace SGA.Domain.Rules.Notificaciones
             estado is EstadoViaje.Retrasado or EstadoViaje.Cancelado;
 
         public static bool TicketProximoAVencer(
-            TicketMensual ticket,
+            TicketDiario ticket,
             DateTime fecha,
             int diasAnticipacion = DiasAnticipacionVencimiento)
         {
@@ -49,7 +49,7 @@ namespace SGA.Domain.Rules.Notificaciones
         }
 
         public static Result<Notificacion> CrearVencimientoTicket(
-            TicketMensual ticket,
+            TicketDiario ticket,
             DateTime fechaHora,
             int diasAnticipacion = DiasAnticipacionVencimiento)
         {
@@ -105,6 +105,14 @@ namespace SGA.Domain.Rules.Notificaciones
                 incidencia.Descripcion!,
                 fechaHora);
         }
+
+        public static Result<Notificacion> CrearManual(
+            int usuarioTransporteId,
+            string tipo,
+            string titulo,
+            string mensaje,
+            DateTime fechaHora) =>
+            Crear(usuarioTransporteId, tipo, titulo, mensaje, fechaHora);
 
         private static Result<Notificacion> Crear(
             int usuarioTransporteId,

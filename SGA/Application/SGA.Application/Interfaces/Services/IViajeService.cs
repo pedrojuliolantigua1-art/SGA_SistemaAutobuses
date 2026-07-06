@@ -11,6 +11,21 @@ namespace SGA.Application.Interfaces.Services
         // lista viajes por conductor
         Task<Result<IReadOnlyList<ViajeDto>>> ListarPorConductorAsync(int conductorId);
 
+        // obtiene un viaje por id
+        Task<Result<ViajeDto>> ObtenerPorIdAsync(int viajeId);
+
+        // lista viajes en curso
+        Task<Result<IReadOnlyList<ViajeDto>>> ListarActivosAsync();
+
+        // lista viajes programados
+        Task<Result<IReadOnlyList<ViajeDto>>> ListarProgramadosAsync();
+
+        // lista viajes por ruta
+        Task<Result<IReadOnlyList<ViajeDto>>> ListarPorRutaAsync(int rutaId);
+
+        // lista viajes por autobus (historial completo)
+        Task<Result<IReadOnlyList<ViajeDto>>> ListarPorAutobusAsync(int autobusId);
+
         // programa un viaje
         Task<Result<ViajeDto>> ProgramarAsync(ProgramarViajeDto dto);
 

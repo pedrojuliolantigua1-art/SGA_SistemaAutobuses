@@ -1,7 +1,7 @@
 ﻿
 namespace SGA.Domain.Models.Autorizaciones
 {
-    public class TicketMensualModel : AutorizacionModel
+    public class TicketDiarioModel : AutorizacionModel
     {
         public DateTime FechaInicio { get; set; }
         public DateTime FechaFin { get; set; }

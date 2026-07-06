@@ -1,4 +1,5 @@
-﻿
+using SGA.Domain.Models.Fotos;
+
 namespace SGA.Domain.Models.Viajes
 {
     public class IncidenciaModel
@@ -9,5 +10,8 @@ namespace SGA.Domain.Models.Viajes
         public string? Tipo { get; set; }
         public string? Descripcion { get; set; }
         public DateTime FechaHora { get; set; }
+
+        public string? ConductorNombre { get; set; }
+        public List<FotoIncidenciaModel> Fotos { get; set; } = new();
     }
 }

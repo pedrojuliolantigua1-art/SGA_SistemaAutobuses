@@ -1,13 +1,12 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SGA.Domain.Repository.Interfaces;
-using SGA.Domain.Services;
 using SGA.Infrastructure.Email;
-using SGA.Infrastructure.Security;
 using SGA.Infrastructure.Almacenamiento;
-using SGA.Infrastructure.Persistence.Abstractions;
-using SGA.Infrastructure.Persistence.Conexion;
+using SGA.Infrastructure.Persistence.Data;
 using SGA.Infrastructure.Persistence.Repositories;
+using SGA.Domain.Services;
 
 namespace SGA.Infrastructure
 {
@@ -18,24 +17,23 @@ namespace SGA.Infrastructure
             IConfiguration configuration)
         {
             services.AddPersistence(configuration);
-            services.AddSecurity(configuration);
             services.AddEmail(configuration);
             services.AddAlmacenamiento(configuration);
 
             return services;
         }
 
-        //persistencia en sql server
+        //persistencia con entity framework core
         private static IServiceCollection AddPersistence(
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            var connectionString = configuration.GetConnectionString("SqlServer")
+            var connectionString = configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException(
-                    "ConnectionStrings:SqlServer no esta configurado en appsettings.json");
+                    "ConnectionStrings:DefaultConnection no esta configurado en appsettings.json");
 
-            services.AddSingleton<ISqlConnectionfactory>(
-                _ => new SqlConnectionfactory(connectionString));
+            services.AddDbContext<SgaDbContext>(options =>
+                options.UseSqlServer(connectionString));
 
             services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             services.AddScoped<IViajeRepository, ViajeRepository>();
@@ -50,19 +48,6 @@ namespace SGA.Infrastructure
             services.AddScoped<IHorarioRutaRepository, HorarioRutaRepository>();
             services.AddScoped<IFotoAutobusRepository, FotoAutobusRepository>();
             services.AddScoped<IFotoIncidenciaRepository, FotoIncidenciaRepository>();
-
-            return services;
-        }
-
-        // Seguridad jwt
-        private static IServiceCollection AddSecurity(
-            this IServiceCollection services,
-            IConfiguration configuration)
-        {
-            services.Configure<JwtOptions>(
-                configuration.GetSection("Jwt"));
-
-            services.AddSingleton<IJwt, JwtService>();
 
             return services;
         }

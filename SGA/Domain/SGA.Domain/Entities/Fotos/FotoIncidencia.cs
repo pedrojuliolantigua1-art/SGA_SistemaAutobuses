@@ -1,4 +1,5 @@
-﻿using SGA.Domain.Base;
+using SGA.Domain.Base;
+using SGA.Domain.Entities.Viajes;
 
 namespace SGA.Domain.Entities.Fotos
 {
@@ -10,5 +11,7 @@ namespace SGA.Domain.Entities.Fotos
         public string PublicId { get; set; } = string.Empty;
         public string SubidoPor { get; set; } = string.Empty;
         public DateTime FechaSubida { get; set; }
+
+        public virtual Incidencia? Incidencia { get; set; }
     }
 }

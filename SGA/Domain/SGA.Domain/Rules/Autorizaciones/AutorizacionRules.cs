@@ -14,23 +14,23 @@ namespace SGA.Domain.Rules
         public static DateTime CalcularFechaFin(DateTime fechaInicio) =>
             fechaInicio.Date.AddMonths(1).AddDays(-1);
 
-        public static Result<TicketMensual> CrearTicketMensual(
+        public static Result<TicketDiario> CrearTicketDiario(
             PagoTransporte? pago,
             int usuarioTransporteId,
             DateTime fechaInicio,
-            TicketMensual? ticketActivo = null,
+            TicketDiario? ticketActivo = null,
             DateTime? fechaEmision = null)
         {
             var validacion = ValidarEmisionTicket(pago, usuarioTransporteId, fechaInicio, ticketActivo);
 
             if (validacion.EsFallo)
             {
-                return Result<TicketMensual>.Fallo(validacion.Error!);
+                return Result<TicketDiario>.Fallo(validacion.Error!);
             }
 
             var inicio = fechaInicio.Date;
 
-            return Result<TicketMensual>.Ok(new TicketMensual
+            return Result<TicketDiario>.Ok(new TicketDiario
             {
                 UsuarioTransporteId = usuarioTransporteId,
                 FechaEmision = fechaEmision ?? DateTime.UtcNow,
@@ -140,7 +140,7 @@ namespace SGA.Domain.Rules
             return Result.Ok();
         }
 
-        public static bool TicketVigente(TicketMensual ticket, DateTime? fecha = null)
+        public static bool TicketVigente(TicketDiario ticket, DateTime? fecha = null)
         {
             var fechaEvaluacion = (fecha ?? DateTime.UtcNow).Date;
 
@@ -161,7 +161,7 @@ namespace SGA.Domain.Rules
 
             return autorizacion switch
             {
-                TicketMensual ticket => ValidarTicketVigente(ticket, fecha),
+                TicketDiario ticket => ValidarTicketVigente(ticket, fecha),
                 TarjetaRecargable tarjeta => ValidarTarjetaConSaldo(tarjeta, costoViaje),
                 PermisoTransporte permiso => ValidarPermisoVigente(permiso, fecha),
                 _ => Result.Fallo(DomainErrors.Autorizaciones.TipoNoSoportado)
@@ -256,7 +256,7 @@ namespace SGA.Domain.Rules
             PagoTransporte? pago,
             int usuarioTransporteId,
             DateTime fechaInicio,
-            TicketMensual? ticketActivo)
+            TicketDiario? ticketActivo)
         {
             var pagoValido = ValidarPagoRegistrado(pago, usuarioTransporteId);
 
@@ -305,7 +305,7 @@ namespace SGA.Domain.Rules
                     : Result.Ok());
         }
 
-        private static Result ValidarTicketVigente(TicketMensual? ticket, DateTime fecha)
+        private static Result ValidarTicketVigente(TicketDiario? ticket, DateTime fecha)
         {
             if (ticket is null)
             {

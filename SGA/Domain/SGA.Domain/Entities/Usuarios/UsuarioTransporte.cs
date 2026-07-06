@@ -8,7 +8,6 @@ namespace SGA.Domain.Entities.Usuarios
 {
     public abstract class UsuarioTransporte: BaseEntity
     {
-        //public string? CodigoInstitucional { get; set; }
         public string? Nombre { get; set; }
         public string? Apellido { get; set; }
         public string? Correo { get; set; }

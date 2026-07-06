@@ -1,80 +1,47 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using SGA.Domain.Entities.Pagos;
 using SGA.Domain.Models.Pagos;
 using SGA.Domain.Repository.Interfaces;
-using SGA.Infrastructure.Persistence.Abstractions;
 using SGA.Infrastructure.Persistence.Common;
+using SGA.Infrastructure.Persistence.Data;
+using System.Linq.Expressions;
 
 namespace SGA.Infrastructure.Persistence.Repositories
 {
-    public sealed class PagoRepository : SqlRepositoryBase, IPagoRepository
+    public sealed class PagoRepository : BaseRepository<PagoTransporte, PagoModel>, IPagoRepository
     {
-        public PagoRepository(ISqlConnectionfactory factory) : base(factory) { }
+        public PagoRepository(SgaDbContext context) : base(context) { }
 
-        public async Task<PagoModel?> GetByIdAsync(int id)
-            => await QuerySingleOrDefaultAsync("sp_Pago_GetById", PagoMapper.Map, Param("@Id", id));
-
-        public async Task<IReadOnlyList<PagoModel>> GetAllAsync()
-            => await QueryAsync("sp_Pago_GetAll", PagoMapper.Map);
-
-        public async Task<IReadOnlyList<PagoModel>> GetByUsuario(int usuarioId)
-            => await QueryAsync("sp_Pago_GetByUsuario", PagoMapper.Map, Param("@UsuarioTransporteId", usuarioId));
-
-        public async Task<PagoModel?> GetPagoSinAutorizacion(int usuarioId)
-            => await QuerySingleOrDefaultAsync("sp_Pago_GetSinAutorizacion", PagoMapper.Map,
-                Param("@UsuarioTransporteId", usuarioId));
-
-        public async Task AddAsync(PagoTransporte entity)
-            => entity.Id = await ExecuteScalarAsync("sp_Pago_Insert", PagoParameters.ParaInsertar(entity));
-
-        public async Task UpdateAsync(PagoTransporte entity)
-            => await ExecuteAsync("sp_Pago_Update", PagoParameters.ParaActualizar(entity));
-
-        public async Task DeleteAsync(PagoTransporte entity)
-            => await ExecuteAsync("sp_Pago_Delete", PagoParameters.ParaEliminar(entity));
-    }
-
-    internal static class PagoMapper
-    {
-        internal static PagoModel Map(SqlReaderRow r) => new()
+        protected override Expression<Func<PagoTransporte, PagoModel>> Proyeccion => p => new PagoModel
         {
-            Id = r.Int("Id"),
-            UsuarioTransporteId = r.Int("UsuarioTransporteId"),
-            AutorizacionTransporteId = r.Int("AutorizacionTransporteId"),
-            Monto = r.Dec("Monto"),
-            TipoPago = r.Str("TipoPago"),
-            Estado = r.Str("Estado"),
-            NumeroComprobante = r.Str("NumeroComprobante"),
-            FechaHora = r.DateTime("FechaHora"),
-            RegistradoPorUsuarioId = r.Int("RegistradoPorUsuarioId")
+            Id = p.Id,
+            UsuarioTransporteId = p.UsuarioTransporteId,
+            AutorizacionTransporteId = p.AutorizacionTransporteId,
+            Monto = p.Monto,
+            TipoPago = p.TipoPago,
+            Estado = p.Estado,
+            NumeroComprobante = p.NumeroComprobante,
+            FechaHora = p.FechaHora,
+            RegistradoPorUsuarioId = p.RegistradoPorUsuarioId,
+            UsuarioNombre = p.Usuario != null ? p.Usuario.Nombre + " " + p.Usuario.Apellido : null,
+            RegistradoPorNombre = p.RegistradoPor != null ? p.RegistradoPor.Nombre + " " + p.RegistradoPor.Apellido : null
         };
-    }
 
-    internal static class PagoParameters
-    {
-        internal static SqlParameter[] ParaInsertar(PagoTransporte p) =>
-        [
-            SqlRepositoryBase.Param("@UsuarioTransporteId", p.UsuarioTransporteId),
-            SqlRepositoryBase.Param("@AutorizacionTransporteId", p.AutorizacionTransporteId),
-            SqlRepositoryBase.Param("@Monto",p.Monto),
-            SqlRepositoryBase.Param("@TipoPago",p.TipoPago),
-            SqlRepositoryBase.Param("@Estado", p.Estado),
-            SqlRepositoryBase.Param("@NumeroComprobante",p.NumeroComprobante),
-            SqlRepositoryBase.Param("@FechaHora", p.FechaHora),
-            SqlRepositoryBase.Param("@RegistradoPorUsuarioId", p.RegistradoPorUsuarioId),
-            SqlRepositoryBase.Param("@CreadoPor", p.CreadoPor)
-        ];
+        public async Task<IReadOnlyList<PagoModel>> GetByUsuario(int usuarioId) =>
+            await Set.AsNoTracking()
+            .Include(p => p.Usuario)
+            .Include(p => p.RegistradoPor)
+            .Where(p => p.UsuarioTransporteId == usuarioId)
+            .Select(Proyeccion).ToListAsync();
 
-        internal static SqlParameter[] ParaActualizar(PagoTransporte p) =>
-        [
-            SqlRepositoryBase.Param("@Id", p.Id),
-            SqlRepositoryBase.Param("@Estado", p.Estado)
-        ];
+        public async Task<PagoModel?> GetPagoSinAutorizacion(int usuarioId) =>
+            await Set.AsNoTracking()
+            .Where(p => p.UsuarioTransporteId == usuarioId && p.AutorizacionTransporteId == 0)
+            .Select(Proyeccion).FirstOrDefaultAsync();
 
-        internal static SqlParameter[] ParaEliminar(PagoTransporte p) =>
-        [
-            SqlRepositoryBase.Param("@Id",  p.Id),
-            SqlRepositoryBase.Param("@EliminadoPor", p.EliminadoPor)
-        ];
+        public async Task<IReadOnlyList<PagoModel>> GetByPeriodo(DateTime desde, DateTime hasta) =>
+            await Set.AsNoTracking().Include(p => p.Usuario).Include(p => p.RegistradoPor)
+            .Where(p => p.FechaHora >= desde && p.FechaHora <= hasta)
+            .Select(Proyeccion).ToListAsync();
     }
 }

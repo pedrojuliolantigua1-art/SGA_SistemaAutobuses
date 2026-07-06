@@ -1,5 +1,4 @@
-﻿using SGA.Domain.Base;
-
+using SGA.Domain.Base;
 
 namespace SGA.Domain.Entities.Transporte
 {
@@ -9,5 +8,7 @@ namespace SGA.Domain.Entities.Transporte
         public TimeSpan HoraSalida { get; set; }
         public TimeSpan HoraLlegadaEstimada { get; set; }
         public bool Activo { get; set; }
+
+        public virtual Ruta? Ruta { get; set; }
     }
 }

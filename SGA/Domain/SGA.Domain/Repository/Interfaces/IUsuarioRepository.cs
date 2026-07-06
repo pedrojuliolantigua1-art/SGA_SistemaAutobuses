@@ -30,7 +30,16 @@ namespace SGA.Domain.Repository.Interfaces
         /// <param name="passwordHash"></param>
         /// <returns></returns>
         Task<bool> ValidarPassword (string correo, string passwordHash); 
-        
+
+        /// <summary>
+        /// Busca un estudiante por su matricula
+        /// </summary>
+        Task<UsuarioModel?> GetByMatricula(string matricula);
+
+        /// <summary>
+        /// Busca un conductor por su numero de licencia
+        /// </summary>
+        Task<UsuarioModel?> GetByNumeroLicencia(string numeroLicencia);
 
     }
 }

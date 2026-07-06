@@ -1,5 +1,3 @@
-﻿
-
 namespace SGA.Domain.Models.Notificaciones
 {
     public class NotificacionModel
@@ -11,5 +9,7 @@ namespace SGA.Domain.Models.Notificaciones
         public string Mensaje { get; set; } = string.Empty;
         public DateTime FechaHora { get; set; }
         public bool Leida { get; set; }
+
+        public string? UsuarioNombre { get; set; }
     }
 }

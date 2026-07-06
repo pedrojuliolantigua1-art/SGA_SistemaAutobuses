@@ -5,25 +5,16 @@ namespace SGA.Application.Interfaces.Services
 {
     public interface IAutorizacionService
     {
-        // obtiene la autorizacion activa de un usuario
-        Task<Result<AutorizacionDto>> ObtenerPorUsuarioAsync(int usuarioId);
+        Task<Result<AutorizacionResumenDto>> ObtenerPorUsuarioAsync(int usuarioId);
 
-        // lista autorizaciones vigentes
-        Task<Result<IReadOnlyList<AutorizacionDto>>> ListarVigentesAsync();
+        Task<Result<AutorizacionResumenDto>> ObtenerPorIdAsync(int autorizacionId);
+        Task<Result<IReadOnlyList<AutorizacionResumenDto>>> ListarVigentesAsync();
+        Task<Result<IReadOnlyList<AutorizacionResumenDto>>> ListarPorPeriodoAsync(DateTime desde, DateTime hasta);
 
-        // lista autorizaciones por periodo
-        Task<Result<IReadOnlyList<AutorizacionDto>>> ListarPorPeriodoAsync(DateTime desde, DateTime hasta);
+        Task<Result<TicketDiarioDto>> EmitirTicketDiarioAsync(CrearTicketDiarioDto dto);
+        Task<Result<TarjetaRecargableDto>> EmitirTarjetaRecargableAsync(CrearTarjetaRecargableDto dto);
+        Task<Result<PermisoTransporteDto>> EmitirPermisoAsync(CrearPermisoTransporteDto dto);
 
-        // emite un ticket mensual
-        Task<Result<AutorizacionDto>> EmitirTicketMensualAsync(CrearTicketMensualDto dto);
-
-        // emite una tarjeta recargable
-        Task<Result<AutorizacionDto>> EmitirTarjetaRecargableAsync(CrearTarjetaRecargableDto dto);
-
-        // emite un permiso de transporte
-        Task<Result<AutorizacionDto>> EmitirPermisoAsync(CrearPermisoTransporteDto dto);
-
-        // anula una autorizacion
-        Task<Result> AnularAsync(int autorizacionId);
+        Task<Result> AnularAsync(int autorizacionId, AnularAutorizacionDto dto);
     }
 }

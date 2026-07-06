@@ -1,4 +1,3 @@
-﻿
 namespace SGA.Domain.Models.Pagos
 {
     public class PagoModel
@@ -12,5 +11,8 @@ namespace SGA.Domain.Models.Pagos
         public string? NumeroComprobante { get; set; }
         public DateTime FechaHora { get; set; }
         public int RegistradoPorUsuarioId { get; set; }
+
+        public string? UsuarioNombre { get; set; }
+        public string? RegistradoPorNombre { get; set; }
     }
 }

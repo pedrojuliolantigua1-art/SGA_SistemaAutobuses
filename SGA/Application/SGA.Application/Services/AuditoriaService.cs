@@ -1,4 +1,5 @@
-﻿using SGA.Application.DTOs.Auditoria;
+﻿using SGA.Application.Common;
+using SGA.Application.DTOs.Auditoria;
 using SGA.Application.Interfaces.Services;
 using SGA.Domain.Error;
 using SGA.Domain.Models.Auditoria;
@@ -25,6 +26,15 @@ namespace SGA.Application.Services
 
             var registros = await _auditoriaRepository.GetbyPeriodo(desde, hasta);
             return Result<IReadOnlyList<AuditoriaDto>>.Ok(registros.Select(Mapear).ToList());
+        }
+
+
+        public async Task<Result<AuditoriaDto>> ObtenerPorIdAsync(int registroId)
+        {
+            var registro = await _auditoriaRepository.GetByIdAsync(registroId);
+            return registro is null
+                ? Result<AuditoriaDto>.Fallo(ApplicationErrors.NoEncontrado("el registro de auditoria"))
+                : Result<AuditoriaDto>.Ok(Mapear(registro));
         }
 
         public async Task<Result<IReadOnlyList<AuditoriaDto>>> ListarPorActorAsync(int usuarioId)

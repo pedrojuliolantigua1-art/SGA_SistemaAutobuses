@@ -1,134 +1,169 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using SGA.Domain.Entities.Auditoria;
 using SGA.Domain.Entities.Viajes;
 using SGA.Domain.Enum;
+using SGA.Domain.Models.Fotos;
 using SGA.Domain.Models.Viajes;
 using SGA.Domain.Repository.Interfaces;
-using SGA.Infrastructure.Persistence.Abstractions;
 using SGA.Infrastructure.Persistence.Common;
+using SGA.Infrastructure.Persistence.Data;
+using System.Linq.Expressions;
 
 namespace SGA.Infrastructure.Persistence.Repositories
 {
-    public sealed class ViajeRepository : SqlRepositoryBase, IViajeRepository
+    public sealed class ViajeRepository : BaseRepository<Viaje, ViajeModel>, IViajeRepository
     {
-        public ViajeRepository(ISqlConnectionfactory factory) : base(factory) { }
+        public ViajeRepository(SgaDbContext context) : base(context) { }
 
-        public async Task<ViajeModel?> GetByIdAsync(int id)
-            => await QuerySingleOrDefaultAsync("sp_Viaje_GetById", ViajeMapper.Map, Param("@Id", id));
+        protected override Expression<Func<Viaje, ViajeModel>> Proyeccion => v => new ViajeModel
+        {
+            Id = v.Id, RutaId = v.RutaId,
+            HorarioRutaId = v.HorarioRutaId,
+            AutobusId = v.AutobusId,
+            ConductorId = v.ConductorId,
+            Fecha = v.Fecha,
+            Estado = v.Estado,
+            HoraInicioReal = v.HoraInicioReal,
+            HoraFinReal = v.HoraFinReal,
+            CupoActual = v.CupoActual,
+            CapacidadMaxima = v.CapacidadMaxima,
+            ConductorNombre = v.Conductor != null ? v.Conductor.Nombre + " " + v.Conductor.Apellido : null,
+            Incidencias = v.Incidencias.Select(i => new IncidenciaModel
+            {
+                Id = i.Id, ViajeId = i.ViajeId,
+                ConductorId = i.ConductorId,
+                Tipo = i.Tipo, Descripcion = i.Descripcion,
+                FechaHora = i.FechaHora,
+                ConductorNombre = i.Conductor != null ? i.Conductor.Nombre + " " + i.Conductor.Apellido : null,
+                Fotos = i.Fotos.Select(f => new FotoIncidenciaModel
+                {
+                    Id = f.Id, IncidenciaId = f.IncidenciaId,
+                    NombreArchivo = f.NombreArchivo,
+                    UrlPublica = f.UrlPublica,
+                    PublicId = f.PublicId,
+                    SubidoPor = f.SubidoPor,
+                    FechaSubida = f.FechaSubida
+                }).ToList()
+            }).ToList()
+        };
 
-        public async Task<IReadOnlyList<ViajeModel>> GetAllAsync()
-            => await QueryAsync("sp_Viaje_GetAll", ViajeMapper.Map);
+        public override async Task<ViajeModel?> GetByIdAsync(int id) =>
+            await Set.AsNoTracking()
+                .Include(v => v.Conductor)
+                .Include(v => v.Incidencias).ThenInclude(i => i.Conductor)
+                .Include(v => v.Incidencias).ThenInclude(i => i.Fotos)
+                .Where(v => v.Id == id).Select(Proyeccion).FirstOrDefaultAsync();
 
-        public async Task<IReadOnlyList<ViajeModel>> GetbyFecha(DateTime fecha)
-            => await QueryAsync("sp_Viaje_GetByFecha", ViajeMapper.Map, Param("@Fecha", fecha.Date));
+        public async Task<IReadOnlyList<ViajeModel>> GetbyFecha(DateTime fecha) =>
+            await Set.AsNoTracking()
+            .Include(v => v.Conductor)
+            .Include(v => v.Incidencias)
+            .Where(v => v.Fecha.Date == fecha.Date)
+            .Select(Proyeccion).ToListAsync();
 
-        public async Task<IReadOnlyList<ViajeModel>> GetbyConductor(int conductorId)
-            => await QueryAsync("sp_Viaje_GetByConductor", ViajeMapper.Map, Param("@ConductorId", conductorId));
+        public async Task<IReadOnlyList<ViajeModel>> GetbyConductor(int conductorId) =>
+            await Set.AsNoTracking()
+            .Include(v => v.Conductor)
+            .Include(v => v.Incidencias)
+            .Where(v => v.ConductorId == conductorId)
+            .Select(Proyeccion).ToListAsync();
 
-        public async Task<IReadOnlyList<ViajeModel>> GetbyAutobusActivo(int autobusId)
-            => await QueryAsync("sp_Viaje_GetByAutobusActivo", ViajeMapper.Map, Param("@AutobusId", autobusId));
+        public async Task<IReadOnlyList<ViajeModel>> GetbyAutobusActivo(int autobusId) =>
+            await Set.AsNoTracking()
+            .Where(v => v.AutobusId == autobusId && v.Estado != EstadoViaje.Finalizado && v.Estado != EstadoViaje.Cancelado)
+            .Select(Proyeccion).ToListAsync();
 
-        public async Task<IReadOnlyList<ViajeModel>> GetbyPeriodo(DateTime desde, DateTime hasta)
-            => await QueryAsync("sp_Viaje_GetByPeriodo", ViajeMapper.Map,
-                Param("@Desde", desde), Param("@Hasta", hasta));
+        public async Task<IReadOnlyList<ViajeModel>> GetbyPeriodo(DateTime desde, DateTime hasta) =>
+            await Set.AsNoTracking()
+            .Include(v => v.Conductor)
+            .Include(v => v.Incidencias)
+            .Where(v => v.Fecha >= desde && v.Fecha <= hasta)
+            .Select(Proyeccion).ToListAsync();
 
-        public async Task<IReadOnlyList<IncidenciaModel>> GetIncidenciasbyPeriodo(DateTime desde, DateTime hasta)
-            => await QueryAsync("sp_Incidencia_GetByPeriodo", IncidenciaMapper.Map,
-                Param("@Desde", desde), Param("@Hasta", hasta));
+        public async Task<IReadOnlyList<ViajeModel>> GetActivos() =>
+            await Set.AsNoTracking()
+            .Include(v => v.Conductor)
+            .Where(v => v.Estado == EstadoViaje.EnCurso)
+            .Select(Proyeccion).ToListAsync();
 
-        public async Task AddAsync(Viaje entity)
-            => entity.Id = await ExecuteScalarAsync("sp_Viaje_Insert", ViajeParameters.ParaInsertar(entity));
+        public async Task<IReadOnlyList<ViajeModel>> GetProgramados() =>
+            await Set.AsNoTracking()
+            .Include(v => v.Conductor)
+            .Where(v => v.Estado == EstadoViaje.Programado)
+            .Select(Proyeccion).ToListAsync();
 
-        public async Task UpdateAsync(Viaje entity)
-            => await ExecuteAsync("sp_Viaje_Update", ViajeParameters.ParaActualizar(entity));
+        public async Task<IReadOnlyList<ViajeModel>> GetbyRuta(int rutaId) =>
+            await Set.AsNoTracking()
+            .Include(v => v.Conductor)
+            .Where(v => v.RutaId == rutaId)
+            .Select(Proyeccion).ToListAsync();
 
-        public async Task DeleteAsync(Viaje entity)
-            => await ExecuteAsync("sp_Viaje_Delete", ViajeParameters.ParaEliminar(entity));
+        public async Task<IReadOnlyList<ViajeModel>> GetbyAutobus(int autobusId) =>
+            await Set.AsNoTracking()
+            .Include(v => v.Conductor)
+            .Where(v => v.AutobusId == autobusId)
+            .Select(Proyeccion).ToListAsync();
 
         public async Task AddIncidencia(Incidencia incidencia)
-            => incidencia.Id = await ExecuteScalarAsync("sp_Incidencia_Insert", IncidenciaParameters.ParaInsertar(incidencia));
+        {
+            await Context.Incidencias.AddAsync(incidencia);
+            await Context.SaveChangesAsync();
+        }
+
+        public async Task<IReadOnlyList<IncidenciaModel>> GetIncidenciasbyPeriodo(DateTime desde, DateTime hasta) =>
+            await Context.Incidencias.AsNoTracking()
+                .Include(i => i.Conductor).Include(i => i.Fotos)
+                .Where(i => i.FechaHora >= desde && i.FechaHora <= hasta)
+                .Select(i => new IncidenciaModel
+                {
+                    Id = i.Id, ViajeId = i.ViajeId,
+                    ConductorId = i.ConductorId,
+                    Tipo = i.Tipo,
+                    Descripcion = i.Descripcion,
+                    FechaHora = i.FechaHora,
+                    ConductorNombre = i.Conductor != null ? i.Conductor.Nombre + " " + i.Conductor.Apellido : null,
+                    Fotos = i.Fotos.Select(f => new FotoIncidenciaModel
+                    {
+                        Id = f.Id, IncidenciaId = f.IncidenciaId,
+                        NombreArchivo = f.NombreArchivo,
+                        UrlPublica = f.UrlPublica,
+                        PublicId = f.PublicId,
+                        SubidoPor = f.SubidoPor,
+                        FechaSubida = f.FechaSubida
+                    }).ToList()
+                }).ToListAsync();
 
         public async Task<int> CancelarViajeAsync(
-            int viajeId, int conductorId, string motivo, DateTime fechaHora, int canceladoPorId, string creadoPor)
-            => await ExecuteScalarAsync("sp_CancelarViaje",
-                Param("@ViajeId", viajeId),
-                Param("@ConductorId", conductorId),
-                Param("@Motivo", motivo),
-                Param("@FechaHora", fechaHora),
-                Param("@CanceladoPorUsuarioId", canceladoPorId),
-                Param("@CreadoPor", creadoPor));
-    }
-
-    internal static class ViajeMapper
-    {
-        internal static ViajeModel Map(SqlReaderRow r) => new()
+            int viajeId, int conductorId, string motivo,
+            DateTime fechaHora, int canceladoPorId, string creadoPor)
         {
-            Id = r.Int("Id"),
-            RutaId = r.Int("RutaId"),
-            HorarioRutaId = r.Int("HorarioRutaId"),
-            AutobusId = r.Int("AutobusId"),
-            ConductorId = r.Int("ConductorId"),
-            Fecha = r.DateTime("Fecha"),
-            Estado = r.Enum<EstadoViaje>("Estado"),
-            HoraInicioReal = r.NullableDateTime("HoraInicioReal"),
-            HoraFinReal = r.NullableDateTime("HoraFinReal"),
-            CupoActual = r.Int("CupoActual"),
-            CapacidadMaxima = r.Int("CapacidadMaxima")
-        };
-    }
+            await using var transaccion = await Context.Database.BeginTransactionAsync();
+            var viaje = await Set.FirstAsync(v => v.Id == viajeId);
+            viaje.Estado = EstadoViaje.Cancelado;
+            Set.Update(viaje);
 
-    internal static class IncidenciaMapper
-    {
-        internal static IncidenciaModel Map(SqlReaderRow r) => new()
-        {
-            Id = r.Int("Id"),
-            ViajeId = r.Int("ViajeId"),
-            ConductorId = r.Int("ConductorId"),
-            Tipo = r.Str("Tipo"),
-            Descripcion = r.Str("Descripcion"),
-            FechaHora = r.DateTime("FechaHora")
-        };
-    }
+            var incidencia = new Incidencia { 
+                ViajeId = viajeId, 
+                ConductorId = conductorId, 
+                Tipo = "CancelacionViaje", 
+                Descripcion = motivo, 
+                FechaHora = fechaHora, 
+                CreadoPor = creadoPor };
+            await Context.Incidencias.AddAsync(incidencia);
+            await Context.SaveChangesAsync();
 
-    internal static class ViajeParameters
-    {
-        internal static SqlParameter[] ParaInsertar(Viaje v) =>
-        [
-            SqlRepositoryBase.Param("@RutaId", v.RutaId),
-            SqlRepositoryBase.Param("@HorarioRutaId", v.HorarioRutaId),
-            SqlRepositoryBase.Param("@AutobusId",  v.AutobusId),
-            SqlRepositoryBase.Param("@ConductorId", v.ConductorId),
-            SqlRepositoryBase.Param("@Fecha", v.Fecha),
-            SqlRepositoryBase.Param("@Estado", (int)v.Estado),
-            SqlRepositoryBase.Param("@HoraInicioReal", v.HoraInicioReal),
-            SqlRepositoryBase.Param("@HoraFinReal", v.HoraFinReal),
-            SqlRepositoryBase.Param("@CupoActual", v.CupoActual),
-            SqlRepositoryBase.Param("@CapacidadMaxima",v.CapacidadMaxima),
-            SqlRepositoryBase.Param("@CreadoPor", v.CreadoPor)
-        ];
+            var auditoria = new RegistroAuditoria { 
+                UsuarioTransporteId = canceladoPorId,
+                Accion = "CancelarViaje",
+                EntidadAfectada = nameof(Viaje),
+                EntidadId = viajeId.ToString(), 
+                Detalle = motivo, FechaHora = fechaHora, 
+                CreadoPor = creadoPor };
+            await Context.RegistrosAuditoria.AddAsync(auditoria);
+            await Context.SaveChangesAsync();
 
-        internal static SqlParameter[] ParaActualizar(Viaje v) =>
-        [
-            SqlRepositoryBase.Param("@Id", v.Id),
-            ..ParaInsertar(v)
-        ];
-
-        internal static SqlParameter[] ParaEliminar(Viaje v) =>
-        [
-            SqlRepositoryBase.Param("@Id", v.Id),
-            SqlRepositoryBase.Param("@EliminadoPor", v.EliminadoPor)
-        ];
-    }
-
-    internal static class IncidenciaParameters
-    {
-        internal static SqlParameter[] ParaInsertar(Incidencia i) =>
-        [
-            SqlRepositoryBase.Param("@ViajeId", i.ViajeId),
-            SqlRepositoryBase.Param("@ConductorId", i.ConductorId),
-            SqlRepositoryBase.Param("@Tipo", i.Tipo),
-            SqlRepositoryBase.Param("@Descripcion", i.Descripcion),
-            SqlRepositoryBase.Param("@FechaHora", i.FechaHora),
-            SqlRepositoryBase.Param("@CreadoPor", i.CreadoPor)
-        ];
+            await transaccion.CommitAsync();
+            return incidencia.Id;
+        }
     }
 }

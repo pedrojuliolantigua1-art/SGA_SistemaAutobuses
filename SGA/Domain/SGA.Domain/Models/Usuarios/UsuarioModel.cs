@@ -10,6 +10,7 @@ namespace SGA.Domain.Models.Usuarios
         public string? Correo { get; set; }
         public string? Telefono { get; set; }
         public string Estado { get; set; } = "Activo";
+
         public RolUsuario RolSistema { get; set; }
     }
 }

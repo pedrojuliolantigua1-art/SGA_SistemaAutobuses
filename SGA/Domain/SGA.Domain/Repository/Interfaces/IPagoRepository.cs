@@ -18,6 +18,6 @@ namespace SGA.Domain.Repository.Interfaces
         /// <returns></returns>
         Task<PagoModel?> GetPagoSinAutorizacion(int usuarioId);
 
-
+        Task<IReadOnlyList<PagoModel>> GetByPeriodo(DateTime desde, DateTime hasta);
     }
 }

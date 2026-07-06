@@ -6,6 +6,7 @@ namespace SGA.Application.Interfaces.Services
 {
     public interface INotificacionService
     {
+        Task<Result<NotificacionDto>> CrearAsync(CrearNotificacionDto dto);
         Task<Result<IReadOnlyList<NotificacionDto>>> ListarPorUsuarioAsync(int usuarioId);
         Task<Result<IReadOnlyList<NotificacionDto>>> ListarPorPeriodoAsync(DateTime desde, DateTime hasta);
         Task<Result> MarcarComoLeidaAsync(int notificacionId);

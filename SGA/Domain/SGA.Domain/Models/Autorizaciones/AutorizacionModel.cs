@@ -1,4 +1,4 @@
-﻿using SGA.Domain.Enum;
+using SGA.Domain.Enum;
 
 namespace SGA.Domain.Models.Autorizaciones
 {
@@ -8,5 +8,7 @@ namespace SGA.Domain.Models.Autorizaciones
         public int UsuarioTransporteId { get; set; }
         public DateTime FechaEmision { get; set; }
         public EstadoAutorizacion Estado { get; set; } = EstadoAutorizacion.Activa;
+
+        public string? UsuarioNombre { get; set; }
     }
 }

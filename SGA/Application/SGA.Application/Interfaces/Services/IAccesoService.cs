@@ -11,6 +11,8 @@ namespace SGA.Application.Interfaces.Services
         // lista accesos por usuario
         Task<Result<IReadOnlyList<AccesoDto>>> ListarPorUsuarioAsync(int usuarioId);
 
+        Task<Result<AccesoDto>> ObtenerPorIdAsync(int accesoId);
+
         // lista accesos por viaje
         Task<Result<IReadOnlyList<AccesoDto>>> ListarPorViajeAsync(int viajeId);
 
