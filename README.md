@@ -1,6 +1,6 @@
 # SGA - Sistema de Gestión de Autorizaciones de Transporte
 
-Proyecto universitario para gestionar el transporte institucional: usuarios, rutas, autobuses, viajes, autorizaciones (tickets, tarjetas, permisos), pagos, accesos, notificaciones y auditoría.
+Proyecto para gestionar el transporte institucional: usuarios, rutas, autobuses, viajes, autorizaciones (tickets, tarjetas, permisos), pagos, accesos, notificaciones y auditoría.
 
 ## ¿Cómo está organizado el proyecto?
 
