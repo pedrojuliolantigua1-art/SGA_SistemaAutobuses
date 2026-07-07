@@ -57,32 +57,6 @@ Es la puerta de entrada HTTP. Aquí viven los Controllers.
 | **TPT (Table per Type)** | `UsuarioTransporte` y `AutorizacionTransporte` son clases abstractas con varias tablas hijas (`Estudiantes`, `Conductores`, `TicketsDiarios`, `TarjetasRecargables`...). Cada subtipo vive en su propia tabla, relacionada por el mismo Id. |
 | **DTOs por módulo** | Cada carpeta de DTOs agrupa solo lo de su módulo (`DTOs/Transporte`, `DTOs/Usuarios`, `DTOs/Common`...), evitando archivos gigantes con todo mezclado. |
 
-## Convención de endpoints
-
-Casi todos los módulos siguen la misma forma:
-
-```
-GET    /api/{modulo}                -> listar
-GET    /api/{modulo}/{id}           -> obtener uno
-POST   /api/{modulo}                -> crear
-PUT    /api/{modulo}/{id}           -> actualizar
-DELETE /api/{modulo}/{id}           -> eliminar (soft delete, recibe Motivo y EliminadoPor)
-POST   /api/{modulo}/{id}/restaurar -> revertir la eliminación
-```
-
-## Cómo correr el proyecto la Api que ya funciona
-
-1. Configurar la cadena de conexión en `Api/SGA.Api/appsettings.json` (`ConnectionStrings:DefaultConnection`).
-2. Aplicar las migraciones de Entity Framework Core:
-   ```
-   dotnet ef database update -p Infrastructure/Persistence/SGA.Infrastructure.Persistence -s Api/SGA.Api
-   ```
-3. Ejecutar la Api:
-   ```
-   dotnet run --project Api/SGA.Api
-   ```
-4. Probar los endpoints desde Swagger en `https://localhost:{puerto}/swagger`.
-
 ## Módulos del sistema
 
 - **Usuarios** (Estudiantes, Empleados Docentes/Administrativos, Conductores)
