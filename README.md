@@ -73,10 +73,7 @@ POST   /api/{modulo}/{id}/restaurar -> revertir la eliminación
 ## Cómo correr el proyecto la Api que ya funciona
 
 1. Configurar la cadena de conexión en `Api/SGA.Api/appsettings.json` (`ConnectionStrings:DefaultConnection`).
-2. Aplicar las migraciones de Entity Framework Core:
-   ```
-   dotnet ef database update -p Infrastructure/Persistence/SGA.Infrastructure.Persistence -s Api/SGA.Api
-   ```
+
 3. Ejecutar la Api:
    ```
    dotnet run --project Api/SGA.Api
