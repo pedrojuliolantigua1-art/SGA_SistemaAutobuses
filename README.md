@@ -36,7 +36,7 @@ Es donde se implementa todo lo que Domain solo declaró como interfaz.
 - **Persistence/Repository/** → la implementación real de cada repositorio, usando LINQ + Entity Framework Core contra SQL Server. Se usa `AsNoTracking()` en toda consulta de solo lectura.
 - **Email/**, **Almacenamiento/** → servicios externos (correo, subida de archivos/fotos).
 
-**No se usa ADO.NET en ningún punto del proyecto** — toda la persistencia pasa por Entity Framework Core.
+**No se usa ADO.NET en ningún punto del proyecto** — toda la persistencia pasa por Entity Framework ya refactorice toda esa parte
 
 ### 4. Api (`SGA.Api`)
 
@@ -54,20 +54,6 @@ Es la puerta de entrada HTTP. Aquí viven los Controllers.
 | **Result / Result\<T\>** | En vez de lanzar excepciones para errores esperados (ej. "no encontrado"), los métodos devuelven un objeto `Result` que indica éxito o el error específico. |
 | **Repository** | Cada entidad tiene su repositorio (`IRutaRepository`, `IViajeRepository`...) que abstrae el acceso a datos. Los Services nunca usan EF Core directamente. |
 | **Soft Delete** | Ningún registro se borra físicamente. El `DELETE` marca `Eliminado = true`, `FechaEliminacion` y `EliminadoPor`, y un filtro global (`HasQueryFilter`) lo excluye de las consultas normales. Siempre queda evidencia. |
-
-
-## Convención de endpoints
-
-Casi todos los módulos siguen la misma forma:
-
-```
-GET    /api/{modulo}                -> listar
-GET    /api/{modulo}/{id}           -> obtener uno
-POST   /api/{modulo}                -> crear
-PUT    /api/{modulo}/{id}           -> actualizar
-DELETE /api/{modulo}/{id}           -> eliminar (soft delete, recibe Motivo y EliminadoPor)
-POST   /api/{modulo}/{id}/restaurar -> revertir la eliminación
-```
 
 ## Cómo correr el proyecto la Api que ya funciona
 
