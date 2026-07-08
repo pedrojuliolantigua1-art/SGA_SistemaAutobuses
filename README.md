@@ -36,7 +36,7 @@ Es donde se implementa todo lo que Domain solo declaró como interfaz.
 - **Persistence/Repository/** → la implementación real de cada repositorio, usando LINQ + Entity Framework Core contra SQL Server. Se usa `AsNoTracking()` en toda consulta de solo lectura.
 - **Email/**, **Almacenamiento/** → servicios externos (correo, subida de archivos/fotos).
 
-**No se usa ADO.NET en ningún punto del proyecto** — toda la persistencia pasa por Entity Framework Core.
+**No se usa ADO.NET en ningún punto del proyecto** — toda la persistencia pasa por Entity Framework ya refactorice toda esa parte
 
 ### 4. Api (`SGA.Api`)
 
@@ -54,8 +54,16 @@ Es la puerta de entrada HTTP. Aquí viven los Controllers.
 | **Result / Result\<T\>** | En vez de lanzar excepciones para errores esperados (ej. "no encontrado"), los métodos devuelven un objeto `Result` que indica éxito o el error específico. |
 | **Repository** | Cada entidad tiene su repositorio (`IRutaRepository`, `IViajeRepository`...) que abstrae el acceso a datos. Los Services nunca usan EF Core directamente. |
 | **Soft Delete** | Ningún registro se borra físicamente. El `DELETE` marca `Eliminado = true`, `FechaEliminacion` y `EliminadoPor`, y un filtro global (`HasQueryFilter`) lo excluye de las consultas normales. Siempre queda evidencia. |
-| **TPT (Table per Type)** | `UsuarioTransporte` y `AutorizacionTransporte` son clases abstractas con varias tablas hijas (`Estudiantes`, `Conductores`, `TicketsDiarios`, `TarjetasRecargables`...). Cada subtipo vive en su propia tabla, relacionada por el mismo Id. |
-| **DTOs por módulo** | Cada carpeta de DTOs agrupa solo lo de su módulo (`DTOs/Transporte`, `DTOs/Usuarios`, `DTOs/Common`...), evitando archivos gigantes con todo mezclado. |
+
+## Cómo correr el proyecto la Api que ya funciona
+
+1. Configurar la cadena de conexión en `Api/SGA.Api/appsettings.json` (`ConnectionStrings:DefaultConnection`).
+
+3. Ejecutar la Api:
+   ```
+   dotnet run --project Api/SGA.Api
+   ```
+4. Probar los endpoints desde Swagger en `https://localhost:{puerto}/swagger`.
 
 ## Módulos del sistema
 
