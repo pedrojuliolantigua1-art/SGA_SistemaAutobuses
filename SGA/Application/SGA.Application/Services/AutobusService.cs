@@ -1,4 +1,3 @@
-﻿
 using SGA.Application.Common;
 using SGA.Application.DTOs.Autobuses;
 using SGA.Application.DTOs.Common;
@@ -29,7 +28,6 @@ namespace SGA.Application.Services
             return Result<IReadOnlyList<AutobusDto>>.Ok(autobuses.Select(MapearAutobus).ToList());
         }
 
-
         public async Task<Result<AutobusDto>> ObtenerPorIdAsync(int autobusId)
         {
             var autobus = await _autobusRepository.GetByIdAsync(autobusId);
@@ -51,6 +49,7 @@ namespace SGA.Application.Services
             var autobus = new Autobus
             {
                 Placa = dto.Placa,
+                Marca = dto.Marca,
                 Modelo = dto.Modelo,
                 Capacidad = dto.Capacidad,
                 Estado = "Disponible",
@@ -60,6 +59,10 @@ namespace SGA.Application.Services
             var validacion = AutobusRules.Validar(autobus);
             if (validacion.EsFallo)
                 return Result<AutobusDto>.Fallo(validacion.Error!);
+
+            var existente = await _autobusRepository.GetByPlaca(autobus.Placa);
+            if (existente is not null)
+                return Result<AutobusDto>.Fallo(DomainErrors.CatalogoTransporte.PlacaDuplicada);
 
             await _autobusRepository.AddAsync(autobus);
             return Result<AutobusDto>.Ok(MapearAutobus(autobus));
@@ -71,11 +74,19 @@ namespace SGA.Application.Services
             if (actual is null)
                 return Result<AutobusDto>.Fallo(ApplicationErrors.NoEncontrado("el autobus"));
 
-            var autobus = new Autobus { Id = autobusId, Placa = dto.Placa, Modelo = dto.Modelo, Capacidad = dto.Capacidad, Estado = actual.Estado };
+            var autobus = new Autobus
+            {
+                Id = autobusId,
+                Placa = dto.Placa,
+                Marca = dto.Marca,
+                Modelo = dto.Modelo,
+                Capacidad = dto.Capacidad,
+                Estado = actual.Estado
+            };
 
-            var validacion = AutobusRules.Validar(autobus);
-            if (validacion.EsFallo)
-                return Result<AutobusDto>.Fallo(validacion.Error!);
+            var existente = await _autobusRepository.GetByPlaca(autobus.Placa);
+            if (existente is not null && existente.Id != autobusId)
+                return Result<AutobusDto>.Fallo(DomainErrors.CatalogoTransporte.PlacaDuplicada);
 
             await _autobusRepository.UpdateAsync(autobus);
             return Result<AutobusDto>.Ok(MapearAutobus(autobus));
@@ -87,7 +98,11 @@ namespace SGA.Application.Services
             if (actual is null)
                 return Result<AutobusDto>.Fallo(ApplicationErrors.NoEncontrado("el autobus"));
 
-            var autobus = new Autobus { Id = autobusId, Placa = actual.Placa, Modelo = actual.Modelo, Capacidad = actual.Capacidad, Estado = dto.NuevoEstado };
+            var autobus = new Autobus
+            {
+                Id = autobusId, Placa = actual.Placa, Marca = actual.Marca,
+                Modelo = actual.Modelo, Capacidad = actual.Capacidad, Estado = dto.NuevoEstado
+            };
             await _autobusRepository.UpdateAsync(autobus);
             return Result<AutobusDto>.Ok(MapearAutobus(autobus));
         }
@@ -98,23 +113,16 @@ namespace SGA.Application.Services
             if (actual is null)
                 return Result.Fallo(ApplicationErrors.NoEncontrado("el autobus"));
 
-            var autobus = new Autobus { Id = autobusId, Eliminado = true, FechaEliminacion = DateTime.UtcNow, EliminadoPor = dto.EliminadoPor };
+            var autobus = new Autobus
+            {
+                Id = autobusId, Eliminado = true,
+                FechaEliminacion = DateTime.UtcNow, EliminadoPor = dto.EliminadoPor
+            };
             await _autobusRepository.DeleteAsync(autobus);
             return Result.Ok();
         }
 
-        public async Task<Result> RestaurarAsync(int autobusId, RestaurarDto dto)
-        {
-            var actual = await _autobusRepository.GetByIdAsync(autobusId);
-            if (actual is null)
-                return Result.Fallo(ApplicationErrors.NoEncontrado("el autobus"));
-
-            var autobus = new Autobus { Id = autobusId, Eliminado = false, FechaEliminacion = null, EliminadoPor = null };
-            await _autobusRepository.UpdateAsync(autobus);
-            return Result.Ok();
-        }
-
-        private static AutobusDto MapearAutobus(AutobusModel a) => new(a.Id, a.Placa, a.Modelo, a.Capacidad, a.Estado);
-        private static AutobusDto MapearAutobus(Autobus a) => new(a.Id, a.Placa, a.Modelo, a.Capacidad, a.Estado);
+        private static AutobusDto MapearAutobus(AutobusModel a) => new(a.Id, a.Placa, a.Marca, a.Modelo, a.Capacidad, a.Estado);
+        private static AutobusDto MapearAutobus(Autobus a) => new(a.Id, a.Placa, a.Marca, a.Modelo, a.Capacidad, a.Estado);
     }
 }

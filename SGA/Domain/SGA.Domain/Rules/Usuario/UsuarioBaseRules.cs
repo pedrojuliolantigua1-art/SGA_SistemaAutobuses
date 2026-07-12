@@ -10,7 +10,7 @@ namespace SGA.Domain.Rules
         public static Result ValidarCorreoInstitucional(string? correo)
         {
             var formatoBasico = ValidationGeneral.FormatoValido(correo, "correo",
-                @"^[^@\s]+@[^@\s]+\.[^@\s]+$","correo electronico valido");
+                @"^[^@\s]+@[^@\s]+\.[^@\s]+$", "correo electronico valido");
 
             if (formatoBasico.EsFallo)
             {
@@ -24,7 +24,7 @@ namespace SGA.Domain.Rules
             else
             {
                 return Result.Fallo(
-                    DomainErrors.General.FormatoInvalido("correo","correo institucional @itla.edu.do"));
+                    DomainErrors.General.FormatoInvalido("correo", "correo institucional @itla.edu.do"));
             }
         }
 
@@ -37,9 +37,8 @@ namespace SGA.Domain.Rules
 
             return ValidationGeneral.Combinar(
                 //Lo puse asi por que no existe nombre o apellido de una sola letra en ningun pais caracteres
-                ValidationGeneral.RequeridoConLongitud(usuario.Nombre,"nombre",min: 2,max: 80), 
-                ValidationGeneral.RequeridoConLongitud(usuario.Apellido,"apellido", min: 2,max: 80),
-
+                ValidationGeneral.RequeridoConLongitud(usuario.Nombre, "nombre", min: 2, max: 80),
+                ValidationGeneral.RequeridoConLongitud(usuario.Apellido, "apellido", min: 2, max: 80),
                 ValidarCorreoInstitucional(usuario.Correo));
         }
 

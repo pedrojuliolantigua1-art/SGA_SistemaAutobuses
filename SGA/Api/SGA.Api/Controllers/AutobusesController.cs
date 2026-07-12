@@ -56,5 +56,7 @@ namespace SGA.Api.Controllers
         public async Task<IActionResult> Eliminar(int id, [FromBody] EliminarDto dto)
             => this.AResultado(await _autobusService.EliminarAsync(id, dto));
 
+        
+
     }
 }

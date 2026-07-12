@@ -125,6 +125,7 @@ namespace SGA.Domain.Validation
             }
         }
 
+
         public static Result Combinar(params Result[] resultados)
         {
             foreach (Result resultado in resultados)
@@ -137,5 +138,7 @@ namespace SGA.Domain.Validation
 
             return Result.Ok();
         }
+
+        public static Result CombinarAsync(params Result[] resultados) => Combinar(resultados);
     }
 }

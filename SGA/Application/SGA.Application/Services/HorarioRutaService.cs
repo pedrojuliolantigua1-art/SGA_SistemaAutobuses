@@ -86,17 +86,6 @@ namespace SGA.Application.Services
             return Result.Ok();
         }
 
-        public async Task<Result> RestaurarAsync(int horarioId, RestaurarDto dto)
-        {
-            var actual = await _horarioRepository.GetByIdAsync(horarioId);
-            if (actual is null)
-                return Result.Fallo(ApplicationErrors.NoEncontrado("el horario"));
-
-            var horario = new HorarioRuta { Id = horarioId, Eliminado = false, FechaEliminacion = null, EliminadoPor = null };
-            await _horarioRepository.UpdateAsync(horario);
-            return Result.Ok();
-        }
-
         private static HorarioRutaDto MapearHorario(HorarioModel h) => new(h.Id, h.RutaId, h.HoraSalida, h.HoraLlegadaEstimada, h.Activo);
         private static HorarioRutaDto MapearHorario(HorarioRuta h) => new(h.Id, h.RutaId, h.HoraSalida, h.HoraLlegadaEstimada, h.Activo);
     }

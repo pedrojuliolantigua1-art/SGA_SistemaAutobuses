@@ -26,6 +26,11 @@ namespace SGA.Domain.Repository.Interfaces
         /// <returns></returns>
         Task<IReadOnlyList<AutorizacionModel>> GetbyPeriodo(DateTime desde, DateTime hasta);
 
+        /// <summary>
+        /// Busca una tarjeta recargable por su numero, para validar que sea unico al emitir una nueva
+        /// </summary>
+        Task<TarjetaRecargableModel?> GetByNumeroTarjeta(string numeroTarjeta);
+
         // la transaccion Registra el pago y crea la autorizacion y
         // registra auditoria en una sola transaccion.
         Task<(int PagoId, int AutorizacionId)> EmitirAutorizacionAsync(

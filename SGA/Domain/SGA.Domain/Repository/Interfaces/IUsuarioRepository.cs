@@ -41,5 +41,10 @@ namespace SGA.Domain.Repository.Interfaces
         /// </summary>
         Task<UsuarioModel?> GetByNumeroLicencia(string numeroLicencia);
 
+        /// <summary>
+        /// Busca un empleado (docente o administrativo) por su codigo de empleado
+        /// </summary>
+        Task<UsuarioModel?> GetByCodigoEmpleado(string codigoEmpleado);
+
     }
 }

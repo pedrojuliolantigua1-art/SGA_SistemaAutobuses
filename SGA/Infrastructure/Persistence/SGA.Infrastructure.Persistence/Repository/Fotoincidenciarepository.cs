@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SGA.Domain.Entities.Fotos;
+using SGA.Domain.Entities.Viajes;
 using SGA.Domain.Models.Fotos;
 using SGA.Domain.Repository.Interfaces;
 using SGA.Infrastructure.Persistence.Common;
@@ -29,10 +30,18 @@ namespace SGA.Infrastructure.Persistence.Repositories
             .Select(Proyeccion).ToListAsync();
 
         public async Task<IReadOnlyList<FotoIncidenciaModel>> GetByViajeId(int viajeId) =>
-            await Set.AsNoTracking()
-                .Include(f => f.Incidencia)
-                .Where(f => f.Incidencia != null && f.Incidencia.ViajeId == viajeId)
-                .Select(Proyeccion)
-                .ToListAsync();
+            await (from f in Set.AsNoTracking()
+                   join i in Context.Set<Incidencia>() on f.IncidenciaId equals i.Id
+                   where i.ViajeId == viajeId
+                   select new FotoIncidenciaModel
+                   {
+                       Id = f.Id,
+                       IncidenciaId = f.IncidenciaId,
+                       NombreArchivo = f.NombreArchivo,
+                       UrlPublica = f.UrlPublica,
+                       PublicId = f.PublicId,
+                       SubidoPor = f.SubidoPor,
+                       FechaSubida = f.FechaSubida
+                   }).ToListAsync();
     }
 }

@@ -27,6 +27,15 @@ namespace SGA.Domain.Error
 
             public static readonly Error OrdenParadaDuplicado =
                 new("CatalogoTransporte.OrdenParadaDuplicado", "No puede haber dos paradas con el mismo orden en la misma ruta.");
+
+            public static readonly Error PlacaDuplicada =
+                new("CatalogoTransporte.PlacaDuplicada", "Ya existe un autobus registrado con esa placa.");
+
+            public static readonly Error LicenciaDuplicada =
+                new("CatalogoTransporte.LicenciaDuplicada", "Ya existe un conductor registrado con ese numero de licencia.");
+
+            public static readonly Error LicenciaVencida =
+                new("CatalogoTransporte.LicenciaVencida", "La licencia del conductor esta vencida.");
         }
     }
 }

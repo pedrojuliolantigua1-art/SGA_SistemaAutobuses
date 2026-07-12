@@ -66,14 +66,15 @@ namespace SGA.Application.DTOs.Usuarios
 
     public sealed record ConductorDto(
         int Id, string? Nombre, string? Apellido, string? Correo, string? Telefono,
-        string Estado, string? NumeroLicencia, bool Disponible);
+        string Estado, string? NumeroLicencia, DateTime? FechaVencimientoLicencia, bool Disponible);
 
     public sealed record CrearConductorDto(
         string? Nombre, string? Apellido, string? Correo, string? Telefono, string? PasswordHash,
-        string? NumeroLicencia, string? CreadoPor);
+        string? NumeroLicencia, DateTime? FechaVencimientoLicencia, string? CreadoPor);
 
     public sealed record ActualizarConductorDto(
-        string? Nombre, string? Apellido, string? Correo, string? Telefono, string? NumeroLicencia);
+        string? Nombre, string? Apellido, string? Correo, string? Telefono,
+        string? NumeroLicencia, DateTime? FechaVencimientoLicencia);
 
     public sealed record CambiarDisponibilidadConductorDto(bool Disponible);
 }

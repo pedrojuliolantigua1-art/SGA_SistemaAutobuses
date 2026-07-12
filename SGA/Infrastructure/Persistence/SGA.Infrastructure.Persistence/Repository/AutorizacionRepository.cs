@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SGA.Domain.Entities.Autorizaciones;
 using SGA.Domain.Entities.Pagos;
+using SGA.Domain.Entities.Usuarios;
 using SGA.Domain.Enum;
 using SGA.Domain.Models.Autorizaciones;
 using SGA.Domain.Repository.Interfaces;
@@ -15,84 +16,83 @@ namespace SGA.Infrastructure.Persistence.Repositories
 
         public async Task<AutorizacionModel?> GetByIdAsync(int id)
         {
-            var ticket = await _context.TicketsDiarios.AsNoTracking()
-                .Include(t => t.Usuario)
-                .Where(t => t.Id == id)
-                .Select(t => new TicketDiarioModel
-                {
-                    Id = t.Id, UsuarioTransporteId = t.UsuarioTransporteId,
-                    FechaEmision = t.FechaEmision,
-                    Estado = t.Estado,
-                    FechaInicio = t.FechaInicio,
-                    FechaFin = t.FechaFin,
-                    UsuarioNombre = t.Usuario != null ? t.Usuario.Nombre + " " + t.Usuario.Apellido : null
-                }).FirstOrDefaultAsync();
+            var ticket = await (from t in _context.TicketsDiarios.AsNoTracking()
+                                join u in _context.Set<UsuarioTransporte>() on t.UsuarioTransporteId equals u.Id into uj
+                                from u in uj.DefaultIfEmpty()
+                                where t.Id == id
+                                select new TicketDiarioModel
+                                {
+                                    Id = t.Id, UsuarioTransporteId = t.UsuarioTransporteId,
+                                    FechaEmision = t.FechaEmision, Estado = t.Estado,
+                                    FechaInicio = t.FechaInicio, FechaFin = t.FechaFin,
+                                    UsuarioNombre = u != null ? u.Nombre + " " + u.Apellido : null
+                                }).FirstOrDefaultAsync();
             if (ticket is not null) return ticket;
 
-            var tarjeta = await _context.TarjetasRecargables.AsNoTracking()
-                .Include(t => t.Usuario)
-                .Where(t => t.Id == id)
-                .Select(t => new TarjetaRecargableModel
-                {
-                    Id = t.Id, UsuarioTransporteId = t.UsuarioTransporteId,
-                    FechaEmision = t.FechaEmision,
-                    Estado = t.Estado,
-                    NumeroTarjeta = t.NumeroTarjeta,
-                    SaldoDisponible = t.SaldoDisponible,
-                    UsuarioNombre = t.Usuario != null ? t.Usuario.Nombre + " " + t.Usuario.Apellido : null
-                }).FirstOrDefaultAsync();
+            var tarjeta = await (from t in _context.TarjetasRecargables.AsNoTracking()
+                                 join u in _context.Set<UsuarioTransporte>() on t.UsuarioTransporteId equals u.Id into uj
+                                 from u in uj.DefaultIfEmpty()
+                                 where t.Id == id
+                                 select new TarjetaRecargableModel
+                                 {
+                                     Id = t.Id, UsuarioTransporteId = t.UsuarioTransporteId,
+                                     FechaEmision = t.FechaEmision, Estado = t.Estado,
+                                     NumeroTarjeta = t.NumeroTarjeta, SaldoDisponible = t.SaldoDisponible,
+                                     UsuarioNombre = u != null ? u.Nombre + " " + u.Apellido : null
+                                 }).FirstOrDefaultAsync();
             if (tarjeta is not null) return tarjeta;
 
-            var permiso = await _context.PermisosTransporte.AsNoTracking()
-                .Include(p => p.Usuario)
-                .Where(p => p.Id == id)
-                .Select(p => new PermisoTransporteModel
-                {
-                    Id = p.Id,
-                    UsuarioTransporteId = p.UsuarioTransporteId,
-                    FechaEmision = p.FechaEmision,
-                    Estado = p.Estado,
-                    CondicionInstitucional = p.CondicionInstitucional,
-                    FechaVencimiento = p.FechaVencimiento,
-                    UsuarioNombre = p.Usuario != null ? p.Usuario.Nombre + " " + p.Usuario.Apellido : null
-                }).FirstOrDefaultAsync();
+            var permiso = await (from p in _context.PermisosTransporte.AsNoTracking()
+                                 join u in _context.Set<UsuarioTransporte>() on p.UsuarioTransporteId equals u.Id into uj
+                                 from u in uj.DefaultIfEmpty()
+                                 where p.Id == id
+                                 select new PermisoTransporteModel
+                                 {
+                                     Id = p.Id, UsuarioTransporteId = p.UsuarioTransporteId,
+                                     FechaEmision = p.FechaEmision, Estado = p.Estado,
+                                     CondicionInstitucional = p.CondicionInstitucional,
+                                     FechaVencimiento = p.FechaVencimiento,
+                                     UsuarioNombre = u != null ? u.Nombre + " " + u.Apellido : null
+                                 }).FirstOrDefaultAsync();
 
             return permiso;
         }
 
         public async Task<IReadOnlyList<AutorizacionModel>> GetAllAsync()
         {
-            var tickets = await _context.TicketsDiarios.AsNoTracking()
-                .Include(t => t.Usuario)
-                .Select(t => new TicketDiarioModel
-                {
-                    Id = t.Id, UsuarioTransporteId = t.UsuarioTransporteId,
-                    FechaEmision = t.FechaEmision,
-                    Estado = t.Estado,
-                    FechaInicio = t.FechaInicio,
-                    FechaFin = t.FechaFin,
-                    UsuarioNombre = t.Usuario != null ? t.Usuario.Nombre + " " + t.Usuario.Apellido : null
-                }).ToListAsync();
+            var tickets = await (from t in _context.TicketsDiarios.AsNoTracking()
+                                 join u in _context.Set<UsuarioTransporte>() on t.UsuarioTransporteId equals u.Id into uj
+                                 from u in uj.DefaultIfEmpty()
+                                 select new TicketDiarioModel
+                                 {
+                                     Id = t.Id, UsuarioTransporteId = t.UsuarioTransporteId,
+                                     FechaEmision = t.FechaEmision, Estado = t.Estado,
+                                     FechaInicio = t.FechaInicio, FechaFin = t.FechaFin,
+                                     UsuarioNombre = u != null ? u.Nombre + " " + u.Apellido : null
+                                 }).ToListAsync();
 
-            var tarjetas = await _context.TarjetasRecargables.AsNoTracking()
-                .Include(t => t.Usuario)
-                .Select(t => new TarjetaRecargableModel
-                {
-                    Id = t.Id, UsuarioTransporteId = t.UsuarioTransporteId,
-                    FechaEmision = t.FechaEmision, Estado = t.Estado,
-                    NumeroTarjeta = t.NumeroTarjeta, SaldoDisponible = t.SaldoDisponible,
-                    UsuarioNombre = t.Usuario != null ? t.Usuario.Nombre + " " + t.Usuario.Apellido : null
-                }).ToListAsync();
+            var tarjetas = await (from t in _context.TarjetasRecargables.AsNoTracking()
+                                  join u in _context.Set<UsuarioTransporte>() on t.UsuarioTransporteId equals u.Id into uj
+                                  from u in uj.DefaultIfEmpty()
+                                  select new TarjetaRecargableModel
+                                  {
+                                      Id = t.Id, UsuarioTransporteId = t.UsuarioTransporteId,
+                                      FechaEmision = t.FechaEmision, Estado = t.Estado,
+                                      NumeroTarjeta = t.NumeroTarjeta, SaldoDisponible = t.SaldoDisponible,
+                                      UsuarioNombre = u != null ? u.Nombre + " " + u.Apellido : null
+                                  }).ToListAsync();
 
-            var permisos = await _context.PermisosTransporte.AsNoTracking()
-                .Include(p => p.Usuario)
-                .Select(p => new PermisoTransporteModel
-                {
-                    Id = p.Id, UsuarioTransporteId = p.UsuarioTransporteId,
-                    FechaEmision = p.FechaEmision, Estado = p.Estado,
-                    CondicionInstitucional = p.CondicionInstitucional, FechaVencimiento = p.FechaVencimiento,
-                    UsuarioNombre = p.Usuario != null ? p.Usuario.Nombre + " " + p.Usuario.Apellido : null
-                }).ToListAsync();
+            var permisos = await (from p in _context.PermisosTransporte.AsNoTracking()
+                                  join u in _context.Set<UsuarioTransporte>() on p.UsuarioTransporteId equals u.Id into uj
+                                  from u in uj.DefaultIfEmpty()
+                                  select new PermisoTransporteModel
+                                  {
+                                      Id = p.Id, UsuarioTransporteId = p.UsuarioTransporteId,
+                                      FechaEmision = p.FechaEmision, Estado = p.Estado,
+                                      CondicionInstitucional = p.CondicionInstitucional,
+                                      FechaVencimiento = p.FechaVencimiento,
+                                      UsuarioNombre = u != null ? u.Nombre + " " + u.Apellido : null
+                                  }).ToListAsync();
 
             return tickets.Cast<AutorizacionModel>().Concat(tarjetas).Concat(permisos).ToList();
         }
@@ -100,30 +100,43 @@ namespace SGA.Infrastructure.Persistence.Repositories
         public async Task<AutorizacionModel> GetbyUsuario(int usuarioId)
         {
             var id = await _context.AutorizacionesTransporte.AsNoTracking()
-                .Where(a => a.UsuarioTransporteId == usuarioId && a.Estado == EstadoAutorizacion.Activa)
-                .OrderByDescending(a => a.FechaEmision)
-                .Select(a => a.Id)
-                .FirstAsync();
+            .Where(a => a.UsuarioTransporteId == usuarioId && a.Estado == EstadoAutorizacion.Activa)
+            .OrderByDescending(a => a.FechaEmision)
+            .Select(a => a.Id)
+            .FirstAsync();
             return (await GetByIdAsync(id))!;
         }
 
         public async Task<IReadOnlyList<AutorizacionModel>> GetVigentes()
         {
             var ids = await _context.AutorizacionesTransporte.AsNoTracking()
-                .Where(a => a.Estado == EstadoAutorizacion.Activa)
-                .Select(a => a.Id)
-                .ToListAsync();
+            .Where(a => a.Estado == EstadoAutorizacion.Activa)
+            .Select(a => a.Id)
+            .ToListAsync();
             return (await GetAllAsync()).Where(a => ids.Contains(a.Id)).ToList();
         }
 
         public async Task<IReadOnlyList<AutorizacionModel>> GetbyPeriodo(DateTime desde, DateTime hasta)
         {
             var ids = await _context.AutorizacionesTransporte.AsNoTracking()
-                .Where(a => a.FechaEmision >= desde && a.FechaEmision <= hasta)
-                .Select(a => a.Id)
-                .ToListAsync();
+            .Where(a => a.FechaEmision >= desde && a.FechaEmision <= hasta)
+            .Select(a => a.Id)
+            .ToListAsync();
             return (await GetAllAsync()).Where(a => ids.Contains(a.Id)).ToList();
         }
+
+        public async Task<TarjetaRecargableModel?> GetByNumeroTarjeta(string numeroTarjeta) =>
+            await (from t in _context.TarjetasRecargables.AsNoTracking()
+                   join u in _context.Set<UsuarioTransporte>() on t.UsuarioTransporteId equals u.Id into uj
+                   from u in uj.DefaultIfEmpty()
+                   where t.NumeroTarjeta == numeroTarjeta
+                   select new TarjetaRecargableModel
+                   {
+                       Id = t.Id, UsuarioTransporteId = t.UsuarioTransporteId,
+                       FechaEmision = t.FechaEmision, Estado = t.Estado,
+                       NumeroTarjeta = t.NumeroTarjeta, SaldoDisponible = t.SaldoDisponible,
+                       UsuarioNombre = u != null ? u.Nombre + " " + u.Apellido : null
+                   }).FirstOrDefaultAsync();
 
         public async Task AddAsync(AutorizacionTransporte entity) { await _context.AddAsync(entity); await _context.SaveChangesAsync(); }
         public async Task UpdateAsync(AutorizacionTransporte entity) { _context.Update(entity); await _context.SaveChangesAsync(); }
@@ -169,7 +182,7 @@ namespace SGA.Infrastructure.Persistence.Repositories
             var pago = new PagoTransporte
             {
                 UsuarioTransporteId = usuarioId, AutorizacionTransporteId = autorizacion.Id,
-                Monto = monto, TipoPago = tipoPago, Estado = "Confirmado",
+                Monto = monto, TipoPago = tipoPago, Estado = EstadoPago.Aplicado,
                 NumeroComprobante = numeroComprobante, FechaHora = fechaHora,
                 RegistradoPorUsuarioId = registradoPorId, CreadoPor = creadoPor
             };

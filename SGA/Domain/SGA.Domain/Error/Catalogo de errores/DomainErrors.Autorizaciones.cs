@@ -36,6 +36,9 @@ namespace SGA.Domain.Error
 
             public static readonly Error AutorizacionYaAnulada =
                 new("AutorizacionYaAnulada", "Su autorizacion ya fue anulada anteriormente");
+
+            public static readonly Error NumeroTarjetaDuplicado =
+                new("Autorizacion.NumeroTarjetaDuplicado", "Ya existe una tarjeta recargable con ese numero.");
         }
     }
 }

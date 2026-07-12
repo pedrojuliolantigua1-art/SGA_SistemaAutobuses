@@ -60,9 +60,7 @@ namespace SGA.Application.Services
             var usuario = await _usuarioRepository.GetByNumeroLicencia(numeroLicencia);
             return usuario is not ConductorModel conductor
                 ? Result<ConductorDto>.Fallo(ApplicationErrors.NoEncontrado("el conductor"))
-                : Result<ConductorDto>.Ok(new ConductorDto(
-                    conductor.Id, conductor.Nombre, conductor.Apellido, conductor.Correo, conductor.Telefono,
-                    conductor.Estado, conductor.NumeroLicencia, conductor.Disponible));
+                : Result<ConductorDto>.Ok(MapearConductor(conductor));
         }
 
         public async Task<Result<bool>> ValidarPasswordAsync(AutenticarDto dto)
@@ -77,10 +75,6 @@ namespace SGA.Application.Services
 
         public async Task<Result<EstudianteDto>> RegistrarEstudianteAsync(CrearEstudianteDto dto)
         {
-            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
-            if (existente is not null)
-                return Result<EstudianteDto>.Fallo(ApplicationErrors.OperacionInvalida("Ya existe un usuario con ese correo."));
-
             var estudiante = new Estudiante
             {
                 Nombre = dto.Nombre,
@@ -98,6 +92,10 @@ namespace SGA.Application.Services
             var validacion = EstudianteRules.Validar(estudiante);
             if (validacion.EsFallo)
                 return Result<EstudianteDto>.Fallo(validacion.Error!);
+
+            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
+            if (existente is not null)
+                return Result<EstudianteDto>.Fallo(DomainErrors.Usuarios.CorreoDuplicado);
 
             await _usuarioRepository.AddAsync(estudiante);
             return Result<EstudianteDto>.Ok(MapearEstudiante(estudiante));
@@ -127,16 +125,16 @@ namespace SGA.Application.Services
             if (validacion.EsFallo)
                 return Result<EstudianteDto>.Fallo(validacion.Error!);
 
+            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
+            if (existente is not null && existente.Id != id)
+                return Result<EstudianteDto>.Fallo(DomainErrors.Usuarios.CorreoDuplicado);
+
             await _usuarioRepository.UpdateAsync(estudiante);
             return Result<EstudianteDto>.Ok(MapearEstudiante(estudiante));
         }
 
         public async Task<Result<EmpleadoDocenteDto>> RegistrarEmpleadoDocenteAsync(CrearEmpleadoDocenteDto dto)
         {
-            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
-            if (existente is not null)
-                return Result<EmpleadoDocenteDto>.Fallo(ApplicationErrors.OperacionInvalida("Ya existe un usuario con ese correo."));
-
             var docente = new EmpleadoDocente
             {
                 Nombre = dto.Nombre,
@@ -157,6 +155,14 @@ namespace SGA.Application.Services
             var validacion = EmpleadoRules.Validar(docente);
             if (validacion.EsFallo)
                 return Result<EmpleadoDocenteDto>.Fallo(validacion.Error!);
+
+            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
+            if (existente is not null)
+                return Result<EmpleadoDocenteDto>.Fallo(DomainErrors.Usuarios.CorreoDuplicado);
+
+            var existenteCodigo = await _usuarioRepository.GetByCodigoEmpleado(dto.CodigoEmpleado ?? string.Empty);
+            if (existenteCodigo is not null)
+                return Result<EmpleadoDocenteDto>.Fallo(DomainErrors.Usuarios.CodigoEmpleadoDuplicado);
 
             await _usuarioRepository.AddAsync(docente);
             return Result<EmpleadoDocenteDto>.Ok(MapearEmpleadoDocente(docente));
@@ -189,16 +195,20 @@ namespace SGA.Application.Services
             if (validacion.EsFallo)
                 return Result<EmpleadoDocenteDto>.Fallo(validacion.Error!);
 
+            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
+            if (existente is not null && existente.Id != id)
+                return Result<EmpleadoDocenteDto>.Fallo(DomainErrors.Usuarios.CorreoDuplicado);
+
+            var existenteCodigo = await _usuarioRepository.GetByCodigoEmpleado(dto.CodigoEmpleado ?? string.Empty);
+            if (existenteCodigo is not null && existenteCodigo.Id != id)
+                return Result<EmpleadoDocenteDto>.Fallo(DomainErrors.Usuarios.CodigoEmpleadoDuplicado);
+
             await _usuarioRepository.UpdateAsync(docente);
             return Result<EmpleadoDocenteDto>.Ok(MapearEmpleadoDocente(docente));
         }
 
         public async Task<Result<EmpleadoAdministrativoDto>> RegistrarEmpleadoAdministrativoAsync(CrearEmpleadoAdministrativoDto dto)
         {
-            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
-            if (existente is not null)
-                return Result<EmpleadoAdministrativoDto>.Fallo(ApplicationErrors.OperacionInvalida("Ya existe un usuario con ese correo."));
-
             var administrativo = new EmpleadoAdministrativo
             {
                 Nombre = dto.Nombre,
@@ -218,6 +228,14 @@ namespace SGA.Application.Services
             var validacion = EmpleadoRules.Validar(administrativo);
             if (validacion.EsFallo)
                 return Result<EmpleadoAdministrativoDto>.Fallo(validacion.Error!);
+
+            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
+            if (existente is not null)
+                return Result<EmpleadoAdministrativoDto>.Fallo(DomainErrors.Usuarios.CorreoDuplicado);
+
+            var existenteCodigo = await _usuarioRepository.GetByCodigoEmpleado(dto.CodigoEmpleado ?? string.Empty);
+            if (existenteCodigo is not null)
+                return Result<EmpleadoAdministrativoDto>.Fallo(DomainErrors.Usuarios.CodigoEmpleadoDuplicado);
 
             await _usuarioRepository.AddAsync(administrativo);
             return Result<EmpleadoAdministrativoDto>.Ok(MapearEmpleadoAdministrativo(administrativo));
@@ -249,16 +267,20 @@ namespace SGA.Application.Services
             if (validacion.EsFallo)
                 return Result<EmpleadoAdministrativoDto>.Fallo(validacion.Error!);
 
+            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
+            if (existente is not null && existente.Id != id)
+                return Result<EmpleadoAdministrativoDto>.Fallo(DomainErrors.Usuarios.CorreoDuplicado);
+
+            var existenteCodigo = await _usuarioRepository.GetByCodigoEmpleado(dto.CodigoEmpleado ?? string.Empty);
+            if (existenteCodigo is not null && existenteCodigo.Id != id)
+                return Result<EmpleadoAdministrativoDto>.Fallo(DomainErrors.Usuarios.CodigoEmpleadoDuplicado);
+
             await _usuarioRepository.UpdateAsync(administrativo);
             return Result<EmpleadoAdministrativoDto>.Ok(MapearEmpleadoAdministrativo(administrativo));
         }
 
         public async Task<Result<ConductorDto>> RegistrarConductorAsync(CrearConductorDto dto)
         {
-            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
-            if (existente is not null)
-                return Result<ConductorDto>.Fallo(ApplicationErrors.OperacionInvalida("Ya existe un usuario con ese correo."));
-
             var conductor = new Conductor
             {
                 Nombre = dto.Nombre,
@@ -267,6 +289,7 @@ namespace SGA.Application.Services
                 Telefono = dto.Telefono,
                 PasswordHash = dto.PasswordHash,
                 NumeroLicencia = dto.NumeroLicencia,
+                FechaVencimientoLicencia = dto.FechaVencimientoLicencia,
                 Disponible = true,
                 TipoUsuario = "Conductor",
                 RolSistema = SGA.Domain.Enum.RolUsuario.Conductor,
@@ -276,6 +299,14 @@ namespace SGA.Application.Services
             var validacion = ConductorRules.Validar(conductor);
             if (validacion.EsFallo)
                 return Result<ConductorDto>.Fallo(validacion.Error!);
+
+            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
+            if (existente is not null)
+                return Result<ConductorDto>.Fallo(DomainErrors.Usuarios.CorreoDuplicado);
+
+            var existenteLicencia = await _usuarioRepository.GetByNumeroLicencia(dto.NumeroLicencia ?? string.Empty);
+            if (existenteLicencia is not null)
+                return Result<ConductorDto>.Fallo(DomainErrors.CatalogoTransporte.LicenciaDuplicada);
 
             await _usuarioRepository.AddAsync(conductor);
             return Result<ConductorDto>.Ok(MapearConductor(conductor));
@@ -295,6 +326,7 @@ namespace SGA.Application.Services
                 Correo = dto.Correo,
                 Telefono = dto.Telefono,
                 NumeroLicencia = dto.NumeroLicencia,
+                FechaVencimientoLicencia = dto.FechaVencimientoLicencia,
                 Disponible = conductorActual.Disponible,
                 TipoUsuario = "Conductor",
                 Estado = actual.Estado,
@@ -304,6 +336,14 @@ namespace SGA.Application.Services
             var validacion = ConductorRules.Validar(conductor);
             if (validacion.EsFallo)
                 return Result<ConductorDto>.Fallo(validacion.Error!);
+
+            var existente = await _usuarioRepository.GetbyCorreo(dto.Correo ?? string.Empty);
+            if (existente is not null && existente.Id != id)
+                return Result<ConductorDto>.Fallo(DomainErrors.Usuarios.CorreoDuplicado);
+
+            var existenteLicencia = await _usuarioRepository.GetByNumeroLicencia(dto.NumeroLicencia ?? string.Empty);
+            if (existenteLicencia is not null && existenteLicencia.Id != id)
+                return Result<ConductorDto>.Fallo(DomainErrors.CatalogoTransporte.LicenciaDuplicada);
 
             await _usuarioRepository.UpdateAsync(conductor);
             return Result<ConductorDto>.Ok(MapearConductor(conductor));
@@ -323,6 +363,7 @@ namespace SGA.Application.Services
                 Correo = conductorActual.Correo,
                 Telefono = conductorActual.Telefono,
                 NumeroLicencia = conductorActual.NumeroLicencia,
+                FechaVencimientoLicencia = conductorActual.FechaVencimientoLicencia,
                 Disponible = dto.Disponible,
                 TipoUsuario = "Conductor",
                 Estado = conductorActual.Estado,
@@ -345,21 +386,6 @@ namespace SGA.Application.Services
             entity.EliminadoPor = dto.EliminadoPor;
 
             await _usuarioRepository.DeleteAsync(entity);
-            return Result.Ok();
-        }
-
-        public async Task<Result> RestaurarAsync(int id, RestaurarDto dto)
-        {
-            var actual = await _usuarioRepository.GetByIdAsync(id);
-            if (actual is null)
-                return Result.Fallo(ApplicationErrors.NoEncontrado("el usuario"));
-
-            var entity = ConvertirEntidadVacia(actual, id);
-            entity.Eliminado = false;
-            entity.FechaEliminacion = null;
-            entity.EliminadoPor = null;
-
-            await _usuarioRepository.UpdateAsync(entity);
             return Result.Ok();
         }
 
@@ -396,6 +422,9 @@ namespace SGA.Application.Services
             new(e.Id, e.Nombre, e.Apellido, e.Correo, e.Telefono, e.Estado, e.CodigoEmpleado, e.Departamento, e.Cargo, e.AreaAdministrativa);
 
         private static ConductorDto MapearConductor(Conductor c) =>
-            new(c.Id, c.Nombre, c.Apellido, c.Correo, c.Telefono, c.Estado, c.NumeroLicencia, c.Disponible);
+            new(c.Id, c.Nombre, c.Apellido, c.Correo, c.Telefono, c.Estado, c.NumeroLicencia, c.FechaVencimientoLicencia, c.Disponible);
+
+        private static ConductorDto MapearConductor(ConductorModel c) =>
+            new(c.Id, c.Nombre, c.Apellido, c.Correo, c.Telefono, c.Estado, c.NumeroLicencia, c.FechaVencimientoLicencia, c.Disponible);
     }
 }

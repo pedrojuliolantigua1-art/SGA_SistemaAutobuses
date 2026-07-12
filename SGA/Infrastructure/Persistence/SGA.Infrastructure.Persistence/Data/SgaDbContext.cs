@@ -50,6 +50,7 @@ namespace SGA.Infrastructure.Persistence.Data
                 entity.HasKey(e => e.Id);
                 entity.ToTable("UsuariosTransporte");
                 entity.HasQueryFilter(e => !e.Eliminado);
+                entity.HasIndex(e => e.Correo).IsUnique();
             });
 
             modelBuilder.Entity<Estudiante>(entity => { entity.ToTable("Estudiantes"); });
@@ -83,6 +84,7 @@ namespace SGA.Infrastructure.Persistence.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.HasQueryFilter(e => !e.Eliminado);
+                entity.HasIndex(e => e.Placa).IsUnique();
 
                 entity.HasMany(e => e.Fotos)
                       .WithOne(f => f.Autobus)
@@ -125,6 +127,7 @@ namespace SGA.Infrastructure.Persistence.Data
             modelBuilder.Entity<TarjetaRecargable>(entity =>
             {
                 entity.ToTable("TarjetasRecargables");
+                entity.HasIndex(e => e.NumeroTarjeta).IsUnique();
                 entity.HasMany(e => e.Recargas).WithOne(r => r.TarjetaRecargable).HasForeignKey(r => r.TarjetaRecargableId).OnDelete(DeleteBehavior.Cascade);
             });
 

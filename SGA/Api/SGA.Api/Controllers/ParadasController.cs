@@ -39,8 +39,5 @@ namespace SGA.Api.Controllers
         public async Task<IActionResult> Eliminar(int id, [FromBody] EliminarDto dto)
             => this.AResultado(await _paradaService.EliminarAsync(id, dto));
 
-        [HttpPost("{id:int}/restaurar")]
-        public async Task<IActionResult> Restaurar(int id, [FromBody] RestaurarDto dto)
-            => this.AResultado(await _paradaService.RestaurarAsync(id, dto));
     }
 }

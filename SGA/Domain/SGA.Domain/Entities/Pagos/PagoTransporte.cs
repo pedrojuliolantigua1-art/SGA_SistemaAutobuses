@@ -1,5 +1,6 @@
 using SGA.Domain.Base;
 using SGA.Domain.Entities.Usuarios;
+using SGA.Domain.Enum;
 
 namespace SGA.Domain.Entities.Pagos
 {
@@ -9,7 +10,7 @@ namespace SGA.Domain.Entities.Pagos
         public int AutorizacionTransporteId { get; set; }
         public decimal Monto { get; set; }
         public string? TipoPago { get; set; }
-        public string? Estado { get; set; }
+        public EstadoPago Estado { get; set; } = EstadoPago.Registrado;
         public string? NumeroComprobante { get; set; }
         public DateTime FechaHora { get; set; }
         public int RegistradoPorUsuarioId { get; set; }

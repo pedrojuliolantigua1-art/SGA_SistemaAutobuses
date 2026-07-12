@@ -2,6 +2,7 @@
 using SGA.Domain.Entities.Pagos;
 using SGA.Domain.Enum;
 using SGA.Domain.Error;
+using SGA.Domain.Repository.Interfaces;
 using SGA.Domain.Validation;
 using DomainError = SGA.Domain.Error.Error;
 
@@ -87,6 +88,23 @@ namespace SGA.Domain.Rules
                 FechaVencimiento = fechaVencimiento,
                 Estado = EstadoAutorizacion.Activa
             });
+        }
+
+        public static async Task<Result> ValidarNumeroTarjetaUnico(IAutorizacionRepository repositorio, string? numeroTarjeta, int? idActual = null)
+        {
+            if (string.IsNullOrWhiteSpace(numeroTarjeta))
+            {
+                return Result.Ok();
+            }
+
+            var existente = await repositorio.GetByNumeroTarjeta(numeroTarjeta);
+
+            if (existente is not null && existente.Id != idActual)
+            {
+                return Result.Fallo(DomainErrors.Autorizaciones.NumeroTarjetaDuplicado);
+            }
+
+            return Result.Ok();
         }
 
         public static Result ValidarRecarga(TarjetaRecargable? tarjeta, PagoTransporte? pago, decimal monto)
@@ -233,7 +251,6 @@ namespace SGA.Domain.Rules
                 ValidationGeneral.IdValido(pago.UsuarioTransporteId, "usuario del pago"),
                 ValidationGeneral.MontoPositivo(pago.Monto, "pago"),
                 ValidationGeneral.Requerido(pago.TipoPago, "tipo de pago"),
-                ValidationGeneral.Requerido(pago.Estado, "estado del pago"),
                 ValidationGeneral.Requerido(pago.NumeroComprobante, "numero de comprobante"),
                 ValidationGeneral.FechaDefinida(pago.FechaHora, "pago"));
 
@@ -360,11 +377,9 @@ namespace SGA.Domain.Rules
                 : Result.Fallo(DomainErrors.Autorizaciones.TicketVencido);
         }
 
-        private static bool EsPagoValido(string? estado)
+        private static bool EsPagoValido(EstadoPago estado)
         {
-            return string.Equals(estado, "Registrado", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(estado, "Aprobado", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(estado, "Pagado", StringComparison.OrdinalIgnoreCase);
+            return estado == EstadoPago.Registrado;
         }
     }
 }

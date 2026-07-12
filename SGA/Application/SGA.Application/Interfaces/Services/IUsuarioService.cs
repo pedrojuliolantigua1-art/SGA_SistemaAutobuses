@@ -29,6 +29,5 @@ namespace SGA.Application.Interfaces.Services
         Task<Result<ConductorDto>> CambiarDisponibilidadAsync(int id, CambiarDisponibilidadConductorDto dto);
 
         Task<Result> EliminarAsync(int id, EliminarDto dto);
-        Task<Result> RestaurarAsync(int id, RestaurarDto dto);
     }
 }

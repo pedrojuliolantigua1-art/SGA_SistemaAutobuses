@@ -4,11 +4,8 @@ using SGA.Domain.Error;
 namespace SGA.Api.Common
 {
     /// <summary>
-    /// Convierte los Result / Result{T} del dominio en respuestas HTTP consistentes.
-    /// - Exito                     -> 200 OK (o 201 si se indica)
-    /// - Aplicacion.NoEncontrado   -> 404 Not Found
-    /// - General.* (validaciones)  -> 400 Bad Request
-    /// - Reglas de negocio         -> 409 Conflict
+    /// Convierte los resultados de la capa de dominio en respuestas HTTP apropiadas.
+    /// Exito 200 OK, 201 Created, 204 No Content
     /// </summary>
     public static class ResultadosHttp
     {
@@ -46,7 +43,7 @@ namespace SGA.Api.Common
             if (error.Codigo.StartsWith("General.", StringComparison.Ordinal))
                 return StatusCodes.Status400BadRequest;
 
-            // Reglas de dominio incumplidas (Acceso.*, Autorizacion.*, Viaje.*, etc.)
+            // Reglas de dominio incumplidas
             return StatusCodes.Status409Conflict;
         }
     }

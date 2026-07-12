@@ -42,7 +42,7 @@ namespace SGA.Application.Services
                 UsuarioTransporteId = dto.UsuarioTransporteId,
                 Monto = dto.Monto,
                 TipoPago = dto.TipoPago,
-                Estado = "Registrado",
+                Estado = SGA.Domain.Enum.EstadoPago.Registrado,
                 NumeroComprobante = dto.NumeroComprobante,
                 FechaHora = dto.FechaHora,
                 RegistradoPorUsuarioId = dto.RegistradoPorUsuarioId,

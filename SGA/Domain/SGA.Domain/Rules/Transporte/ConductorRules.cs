@@ -12,6 +12,18 @@ namespace SGA.Domain.Rules
         public static Result ValidarNumeroLicencia(string? numeroLicencia) =>
             ValidationGeneral.FormatoValido(numeroLicencia, "numero de licencia", PatronNumeroLicencia, "11 numeros solamente");
 
+        public static Result ValidarLicenciaVigente(DateTime? fechaVencimientoLicencia)
+        {
+            var fechaValida = ValidationGeneral.FechaDefinida(fechaVencimientoLicencia ?? default, "vencimiento de licencia");
+            if (fechaValida.EsFallo)
+            {
+                return fechaValida;
+            }
+
+            return fechaVencimientoLicencia!.Value.Date < DateTime.UtcNow.Date
+                ? Result.Fallo(DomainErrors.CatalogoTransporte.LicenciaVencida)
+                : Result.Ok();
+        }
         public static Result Validar(Conductor? conductor)
         {
             if (conductor is null)
@@ -20,7 +32,8 @@ namespace SGA.Domain.Rules
             }
 
             return ValidationGeneral.Combinar(UsuarioBaseRules.ValidarDatosBase(conductor),
-                ValidarNumeroLicencia(conductor.NumeroLicencia));
+                ValidarNumeroLicencia(conductor.NumeroLicencia),
+                ValidarLicenciaVigente(conductor.FechaVencimientoLicencia));
         }
 
         public static Result ValidarParaAsignacion(Conductor? conductor)
@@ -32,7 +45,6 @@ namespace SGA.Domain.Rules
             }
 
             var idValido = ValidationGeneral.IdValido(conductor!.Id, "conductor");
-
             if (idValido.EsFallo)
             {
                 return idValido;

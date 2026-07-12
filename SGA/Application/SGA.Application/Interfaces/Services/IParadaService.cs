@@ -15,6 +15,5 @@ namespace SGA.Application.Interfaces.Services
         Task<Result<ParadaDto>> ActualizarAsync(int paradaId, ActualizarParadaDto dto);
         Task<Result> ReordenarAsync(ReordenarParadasDto dto);
         Task<Result> EliminarAsync(int paradaId, EliminarDto dto);
-        Task<Result> RestaurarAsync(int paradaId, RestaurarDto dto);
     }
 }

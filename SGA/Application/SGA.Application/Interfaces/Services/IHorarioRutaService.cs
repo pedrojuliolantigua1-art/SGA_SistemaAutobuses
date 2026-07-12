@@ -13,6 +13,5 @@ namespace SGA.Application.Interfaces.Services
         Task<Result<HorarioRutaDto>> CrearAsync(CrearHorarioRutaDto dto);
         Task<Result<HorarioRutaDto>> ActualizarAsync(int horarioId, ActualizarHorarioRutaDto dto);
         Task<Result> EliminarAsync(int horarioId, EliminarDto dto);
-        Task<Result> RestaurarAsync(int horarioId, RestaurarDto dto);
     }
 }

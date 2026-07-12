@@ -1,5 +1,7 @@
 namespace SGA.Domain.Models.Pagos
 {
+    using SGA.Domain.Enum;
+
     public class PagoModel
     {
         public int Id { get; set; }
@@ -7,7 +9,7 @@ namespace SGA.Domain.Models.Pagos
         public int AutorizacionTransporteId { get; set; }
         public decimal Monto { get; set; }
         public string? TipoPago { get; set; }
-        public string? Estado { get; set; }
+        public EstadoPago Estado { get; set; }
         public string? NumeroComprobante { get; set; }
         public DateTime FechaHora { get; set; }
         public int RegistradoPorUsuarioId { get; set; }

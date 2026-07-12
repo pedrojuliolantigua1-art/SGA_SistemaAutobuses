@@ -26,7 +26,5 @@ namespace SGA.Application.Interfaces.Services
         // elimina una ruta existente
         Task<Result> EliminarAsync(int rutaId, EliminarDto dto);
 
-        // restaura una ruta eliminada
-        Task<Result> RestaurarAsync(int rutaId, RestaurarDto dto);
     }
 }

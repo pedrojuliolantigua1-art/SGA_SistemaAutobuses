@@ -99,17 +99,6 @@ namespace SGA.Application.Services
             return Result.Ok();
         }
 
-        public async Task<Result> RestaurarAsync(int paradaId, RestaurarDto dto)
-        {
-            var actual = await _paradaRepository.GetByIdAsync(paradaId);
-            if (actual is null)
-                return Result.Fallo(ApplicationErrors.NoEncontrado("la parada"));
-
-            var parada = new Parada { Id = paradaId, Eliminado = false, FechaEliminacion = null, EliminadoPor = null };
-            await _paradaRepository.UpdateAsync(parada);
-            return Result.Ok();
-        }
-
         private static ParadaDto MapearParada(ParadaModel p) => new(
             p.Id,
             p.RutaId,

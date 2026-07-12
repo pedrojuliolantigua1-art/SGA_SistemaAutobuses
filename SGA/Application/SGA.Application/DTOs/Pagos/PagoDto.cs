@@ -1,8 +1,10 @@
+using SGA.Domain.Enum;
+
 namespace SGA.Application.DTOs.Pagos
 {
     public sealed record PagoDto(
         int Id, int UsuarioTransporteId, int AutorizacionTransporteId, decimal Monto,
-        string? TipoPago, string? Estado, string? NumeroComprobante,
+        string? TipoPago, EstadoPago Estado, string? NumeroComprobante,
         DateTime FechaHora, int RegistradoPorUsuarioId);
 
     public sealed record RegistrarPagoDto(

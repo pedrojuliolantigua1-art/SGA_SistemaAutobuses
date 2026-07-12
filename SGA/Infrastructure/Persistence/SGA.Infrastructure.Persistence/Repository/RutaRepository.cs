@@ -22,40 +22,29 @@ namespace SGA.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<RutaModel>> GetActivas() =>
             await Set.AsNoTracking().Where(r => r.Activa).Select(Proyeccion).ToListAsync();
 
-        public async Task<IReadOnlyList<ParadaModel>> GetParadas(int rutaId)
-        {
-            var ruta = await Set.AsNoTracking()
-                .Include(r => r.Paradas.OrderBy(p => p.Orden))
-                .FirstOrDefaultAsync(r => r.Id == rutaId);
+        public async Task<IReadOnlyList<ParadaModel>> GetParadas(int rutaId) =>
+            await (from p in Context.Set<Parada>().AsNoTracking()
+                   where p.RutaId == rutaId
+                   orderby p.Orden
+                   select new ParadaModel
+                   {
+                       Id = p.Id,
+                       RutaId = p.RutaId,
+                       Nombre = p.Nombre,
+                       Referencia = p.Referencia,
+                       Orden = p.Orden
+                   }).ToListAsync();
 
-            if (ruta is null) return new List<ParadaModel>();
-
-            return ruta.Paradas.Select(p => new ParadaModel
-            {
-                Id = p.Id,
-                RutaId = p.RutaId,
-                Nombre = p.Nombre,
-                Referencia = p.Referencia,
-                Orden = p.Orden
-            }).ToList();
-        }
-
-        public async Task<IReadOnlyList<HorarioModel>> GetHorarios(int rutaId)
-        {
-            var ruta = await Set.AsNoTracking()
-                .Include(r => r.Horarios.Where(h => h.Activo))
-                .FirstOrDefaultAsync(r => r.Id == rutaId);
-
-            if (ruta is null) return new List<HorarioModel>();
-
-            return ruta.Horarios.Select(h => new HorarioModel
-            {
-                Id = h.Id,
-                RutaId = h.RutaId,
-                HoraSalida = h.HoraSalida,
-                HoraLlegadaEstimada = h.HoraLlegadaEstimada, 
-                Activo = h.Activo
-            }).ToList();
-        }
+        public async Task<IReadOnlyList<HorarioModel>> GetHorarios(int rutaId) =>
+            await (from h in Context.Set<HorarioRuta>().AsNoTracking()
+                   where h.RutaId == rutaId && h.Activo
+                   select new HorarioModel
+                   {
+                       Id = h.Id,
+                       RutaId = h.RutaId,
+                       HoraSalida = h.HoraSalida,
+                       HoraLlegadaEstimada = h.HoraLlegadaEstimada,
+                       Activo = h.Activo
+                   }).ToListAsync();
     }
 }

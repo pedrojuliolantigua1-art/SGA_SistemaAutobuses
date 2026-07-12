@@ -45,13 +45,10 @@ namespace SGA.Api.Controllers
         public async Task<IActionResult> Actualizar(int id, [FromBody] ActualizarRutaDto dto)
             => this.AResultado(await _rutaService.ActualizarAsync(id, dto));
 
-        /// <summary>Elimina (logicamente) una ruta.</summary>
+        /// <summary>Elimina una ruta.</summary>
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Eliminar(int id, [FromBody] EliminarDto dto)
             => this.AResultado(await _rutaService.EliminarAsync(id, dto));
 
-        [HttpPost("{id:int}/restaurar")]
-        public async Task<IActionResult> Restaurar(int id, [FromBody] RestaurarDto dto)
-            => this.AResultado(await _rutaService.RestaurarAsync(id, dto));
     }
 }

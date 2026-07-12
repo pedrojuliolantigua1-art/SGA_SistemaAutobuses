@@ -39,6 +39,7 @@ namespace SGA.Infrastructure.Persistence.Repositories
                     Estado = c.Estado,
                     RolSistema = c.RolSistema,
                     NumeroLicencia = c.NumeroLicencia,
+                    FechaVencimientoLicencia = c.FechaVencimientoLicencia,
                     Disponible = c.Disponible
                 }).ToListAsync();
 
@@ -112,6 +113,7 @@ namespace SGA.Infrastructure.Persistence.Repositories
                     Estado = c.Estado,
                     RolSistema = c.RolSistema,
                     NumeroLicencia = c.NumeroLicencia,
+                    FechaVencimientoLicencia = c.FechaVencimientoLicencia,
                     Disponible = c.Disponible
                 }).FirstOrDefaultAsync();
             if (conductor is not null) return conductor;
@@ -185,8 +187,34 @@ namespace SGA.Infrastructure.Persistence.Repositories
                 {
                     Id = c.Id, Nombre = c.Nombre, Apellido = c.Apellido, Correo = c.Correo,
                     Telefono = c.Telefono, Estado = c.Estado, RolSistema = c.RolSistema,
-                    NumeroLicencia = c.NumeroLicencia, Disponible = c.Disponible
+                    NumeroLicencia = c.NumeroLicencia,
+                    FechaVencimientoLicencia = c.FechaVencimientoLicencia,
+                    Disponible = c.Disponible
                 }).FirstOrDefaultAsync();
+
+        public async Task<UsuarioModel?> GetByCodigoEmpleado(string codigoEmpleado)
+        {
+            var docente = await _context.EmpleadosDocentes.AsNoTracking()
+                .Where(d => d.CodigoEmpleado == codigoEmpleado)
+                .Select(d => new EmpleadoDocenteModel
+                {
+                    Id = d.Id, Nombre = d.Nombre, Apellido = d.Apellido, Correo = d.Correo,
+                    Telefono = d.Telefono, Estado = d.Estado, RolSistema = d.RolSistema,
+                    CodigoEmpleado = d.CodigoEmpleado, Departamento = d.Departamento, Cargo = d.Cargo,
+                    Especialidad = d.Especialidad, TipoContrato = d.TipoContrato
+                }).FirstOrDefaultAsync();
+            if (docente is not null) return docente;
+
+            return await _context.EmpleadosAdministrativos.AsNoTracking()
+                .Where(a => a.CodigoEmpleado == codigoEmpleado)
+                .Select(a => new EmpleadoAdministrativoModel
+                {
+                    Id = a.Id, Nombre = a.Nombre, Apellido = a.Apellido, Correo = a.Correo,
+                    Telefono = a.Telefono, Estado = a.Estado, RolSistema = a.RolSistema,
+                    CodigoEmpleado = a.CodigoEmpleado, Departamento = a.Departamento, Cargo = a.Cargo,
+                    AreaAdministrativa = a.AreaAdministrativa
+                }).FirstOrDefaultAsync();
+        }
 
         public async Task AddAsync(UsuarioTransporte entity)
         {

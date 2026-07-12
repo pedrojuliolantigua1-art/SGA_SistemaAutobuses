@@ -112,17 +112,6 @@ namespace SGA.Application.Services
             return Result.Ok();
         }
 
-        public async Task<Result> RestaurarAsync(int rutaId, RestaurarDto dto)
-        {
-            var rutaActual = await _rutaRepository.GetByIdAsync(rutaId);
-            if (rutaActual is null)
-                return Result.Fallo(ApplicationErrors.NoEncontrado("la ruta"));
-
-            var ruta = new Ruta { Id = rutaId, Eliminado = false, FechaEliminacion = null, EliminadoPor = null };
-            await _rutaRepository.UpdateAsync(ruta);
-            return Result.Ok();
-        }
-
         private static RutaDto MapearRuta(Ruta ruta) => new(
             ruta.Id, 
             ruta.Nombre, 

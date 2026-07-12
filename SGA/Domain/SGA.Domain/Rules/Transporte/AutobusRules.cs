@@ -13,7 +13,7 @@ namespace SGA.Domain.Rules
             ValidationGeneral.FormatoValido(placa, "placa", PatronPlaca, "1-2 letras seguidas de 6 numeros (ejemplo: A123456)");
 
         public static bool EstaDisponible(string? estado) =>
-            string.Equals(estado, "Disponible", StringComparison.OrdinalIgnoreCase) || 
+            string.Equals(estado, "Disponible", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(estado, "Activo", StringComparison.OrdinalIgnoreCase);
 
         public static Result Validar(Autobus? autobus)
@@ -25,7 +25,9 @@ namespace SGA.Domain.Rules
 
             return ValidationGeneral.Combinar(ValidarPlaca(autobus.Placa),
                 ValidationGeneral.EnteroPositivo(autobus.Capacidad, "capacidad"),
-                ValidationGeneral.Requerido(autobus.Estado, "estado del autobus"));
+                ValidationGeneral.Requerido(autobus.Estado, "estado del autobus"),
+                ValidationGeneral.Requerido(autobus.Modelo, "Modelo del autobus"),
+                ValidationGeneral.Requerido(autobus.Marca, "Marca del autobus"));
         }
 
         public static Result ValidarParaAsignacion(Autobus? autobus)

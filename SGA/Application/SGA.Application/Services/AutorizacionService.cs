@@ -4,6 +4,7 @@ using SGA.Application.Interfaces.Services;
 using SGA.Domain.Entities.Autorizaciones;
 using SGA.Domain.Entities.Pagos;
 using SGA.Domain.Error;
+using SGA.Domain.Enum;
 using SGA.Domain.Models.Autorizaciones;
 using SGA.Domain.Models.Pagos;
 using SGA.Domain.Repository.Interfaces;
@@ -40,7 +41,6 @@ namespace SGA.Application.Services
                 ? Result<AutorizacionResumenDto>.Fallo(ApplicationErrors.NoEncontrado("la autorizacion del usuario"))
                 : Result<AutorizacionResumenDto>.Ok(MapearResumen(autorizacion));
         }
-
 
         public async Task<Result<AutorizacionResumenDto>> ObtenerPorIdAsync(int autorizacionId)
         {
@@ -100,6 +100,10 @@ namespace SGA.Application.Services
             var autorizacionActual = await ObtenerAutorizacionActivaAsync(dto.UsuarioTransporteId);
             if (autorizacionActual is not null)
                 return Result<TarjetaRecargableDto>.Fallo(ApplicationErrors.OperacionInvalida("El usuario ya tiene una autorizacion activa."));
+
+            var existente = await _autorizacionRepository.GetByNumeroTarjeta(dto.NumeroTarjeta ?? string.Empty);
+            if (existente is not null)
+                return Result<TarjetaRecargableDto>.Fallo(DomainErrors.Autorizaciones.NumeroTarjetaDuplicado);
 
             var pago = ConvertirPago(await _pagoRepository.GetPagoSinAutorizacion(dto.UsuarioTransporteId));
             var tarjetaCreada = AutorizacionRules.CrearTarjetaRecargable(
@@ -189,7 +193,7 @@ namespace SGA.Application.Services
 
         private async Task MarcarPagoComoAplicadoAsync(PagoTransporte pago)
         {
-            pago.Estado = "Aplicado";
+            pago.Estado = EstadoPago.Aplicado;
             await _pagoRepository.UpdateAsync(pago);
         }
 

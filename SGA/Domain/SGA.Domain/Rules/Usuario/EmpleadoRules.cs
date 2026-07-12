@@ -10,7 +10,7 @@ namespace SGA.Domain.Rules
         private const string PatronCodigoEmpleado = @"^Trab-\d{4,8}$";
 
         public static Result ValidarCodigoEmpleado(string? codigoEmpleado) =>
-            ValidationGeneral.FormatoValido (codigoEmpleado, "codigo de empleado", PatronCodigoEmpleado,
+            ValidationGeneral.FormatoValido(codigoEmpleado, "codigo de empleado", PatronCodigoEmpleado,
             "Trab- luego 4 o 8 numeros (ej: Trab-034532)");
 
         public static Result Validar(Empleado? empleado)
