@@ -15,5 +15,10 @@ namespace SGA.Domain.Repository.Interfaces
         /// busca un autobus por su placa
         /// </summary>
         Task<AutobusModel?> GetByPlaca(string placa);
+        /// <summary>
+        /// Muestra todos los autobuses eliminados
+        /// </summary>
+        /// <returns></returns>
+        Task<IReadOnlyList<AutobusModel>> GetEliminados();
     }
 }

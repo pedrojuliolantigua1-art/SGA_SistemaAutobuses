@@ -1,5 +1,6 @@
 ﻿
 using SGA.Application.Common;
+using SGA.Application.DTOs.Autobuses;
 using SGA.Application.DTOs.Common;
 using SGA.Application.DTOs.Horarios;
 using SGA.Application.Interfaces.Services;
@@ -86,7 +87,15 @@ namespace SGA.Application.Services
             return Result.Ok();
         }
 
+        public async Task<Result<IReadOnlyList<HorarioRutaDto>>> ListarEliminadosAsync()
+        {
+            var horario = await _horarioRepository.GetEliminados();
+            return Result<IReadOnlyList<HorarioRutaDto>>.Ok(horario.Select(MapearHorario).ToList());
+        }
+
         private static HorarioRutaDto MapearHorario(HorarioModel h) => new(h.Id, h.RutaId, h.HoraSalida, h.HoraLlegadaEstimada, h.Activo);
         private static HorarioRutaDto MapearHorario(HorarioRuta h) => new(h.Id, h.RutaId, h.HoraSalida, h.HoraLlegadaEstimada, h.Activo);
+
+        
     }
 }

@@ -11,5 +11,10 @@ namespace SGA.Domain.Repository.Interfaces
         /// <param name="rutaId"></param>
         /// <returns></returns>
         Task<IReadOnlyList<HorarioModel>> GetByRuta(int rutaId);
+        /// <summary>
+        /// Muestra todos los horarios eliminados
+        /// </summary>
+        /// <returns></returns>
+        Task<IReadOnlyList<HorarioModel>> GetEliminados();
     }
 }

@@ -17,5 +17,6 @@ namespace SGA.Application.Interfaces.Services
         Task<Result<AutobusDto>> ActualizarAsync(int autobusId, ActualizarAutobusDto dto);
         Task<Result<AutobusDto>> CambiarEstadoAsync(int autobusId, CambiarEstadoAutobusDto dto);
         Task<Result> EliminarAsync(int autobusId, EliminarDto dto);
+        Task<Result<IReadOnlyList<AutobusDto>>> ListarEliminadosAsync();
     }
 }

@@ -26,8 +26,13 @@ namespace SGA.Domain.Rules
             return ValidationGeneral.Combinar(ValidarPlaca(autobus.Placa),
                 ValidationGeneral.EnteroPositivo(autobus.Capacidad, "capacidad"),
                 ValidationGeneral.Requerido(autobus.Estado, "estado del autobus"),
+                ValidarEstado(autobus.Estado),
                 ValidationGeneral.Requerido(autobus.Modelo, "Modelo del autobus"),
+                ValidationGeneral.LongitudValida(autobus.Modelo, "Modelo del autobus", 2, 50),
+                ValidationGeneral.LongitudValida(autobus.Marca, "Marca del autobus", 2, 50),
                 ValidationGeneral.Requerido(autobus.Marca, "Marca del autobus"));
+                
+
         }
 
         public static Result ValidarParaAsignacion(Autobus? autobus)
@@ -44,6 +49,23 @@ namespace SGA.Domain.Rules
             }
 
             return ValidationGeneral.IdValido(autobus.Id, "autobus");
+        }
+
+        private static readonly string[] EstadosPermitidos ={"Disponible", "Activo", "Mantenimiento", "FueraServicio"};
+
+        public static Result ValidarEstado(string? estado)
+        {
+            var validacion = ValidationGeneral.RequeridoConLongitud(
+                estado, "estado del autobus", 5, 20);
+
+            if (validacion.EsFallo)
+                return validacion;
+
+            return EstadosPermitidos.Contains(estado!.Trim(), StringComparer.OrdinalIgnoreCase)
+                ? Result.Ok()
+                : Result.Fallo(DomainErrors.General.FormatoInvalido(
+                    "estado del autobus",
+                    "Disponible, Activo, Mantenimiento o FueraServicio"));
         }
     }
 }

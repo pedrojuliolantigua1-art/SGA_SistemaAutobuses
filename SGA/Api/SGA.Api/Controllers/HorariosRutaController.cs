@@ -3,6 +3,7 @@ using SGA.Api.Common;
 using SGA.Application.DTOs.Common;
 using SGA.Application.DTOs.Horarios;
 using SGA.Application.Interfaces.Services;
+using SGA.Application.Services;
 
 namespace SGA.Api.Controllers
 {
@@ -25,6 +26,7 @@ namespace SGA.Api.Controllers
 
         [HttpPost]
         public async Task<IActionResult> Crear([FromBody] CrearHorarioRutaDto dto)
+
             => this.AResultadoCreado(await _horarioRutaService.CrearAsync(dto));
 
         [HttpPut("{id:int}")]
@@ -35,6 +37,10 @@ namespace SGA.Api.Controllers
         public async Task<IActionResult> Eliminar(int id, [FromBody] EliminarDto dto)
             => this.AResultado(await _horarioRutaService.EliminarAsync(id, dto));
 
-        
+        [HttpGet("eliminados")]
+        public async Task<IActionResult> ListarEliminados()
+            => this.AResultado(await _horarioRutaService.ListarEliminadosAsync());
+
+
     }
 }

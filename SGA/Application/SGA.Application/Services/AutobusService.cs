@@ -84,6 +84,10 @@ namespace SGA.Application.Services
                 Estado = actual.Estado
             };
 
+            var validacion = AutobusRules.Validar(autobus);
+            if (validacion.EsFallo)
+                return Result<AutobusDto>.Fallo(validacion.Error!);
+
             var existente = await _autobusRepository.GetByPlaca(autobus.Placa);
             if (existente is not null && existente.Id != autobusId)
                 return Result<AutobusDto>.Fallo(DomainErrors.CatalogoTransporte.PlacaDuplicada);
@@ -103,6 +107,11 @@ namespace SGA.Application.Services
                 Id = autobusId, Placa = actual.Placa, Marca = actual.Marca,
                 Modelo = actual.Modelo, Capacidad = actual.Capacidad, Estado = dto.NuevoEstado
             };
+
+            var validacion = AutobusRules.Validar(autobus);
+            if (validacion.EsFallo)
+                return Result<AutobusDto>.Fallo(validacion.Error!);
+
             await _autobusRepository.UpdateAsync(autobus);
             return Result<AutobusDto>.Ok(MapearAutobus(autobus));
         }
@@ -122,7 +131,17 @@ namespace SGA.Application.Services
             return Result.Ok();
         }
 
-        private static AutobusDto MapearAutobus(AutobusModel a) => new(a.Id, a.Placa, a.Marca, a.Modelo, a.Capacidad, a.Estado);
-        private static AutobusDto MapearAutobus(Autobus a) => new(a.Id, a.Placa, a.Marca, a.Modelo, a.Capacidad, a.Estado);
+        public async Task<Result<IReadOnlyList<AutobusDto>>> ListarEliminadosAsync()
+        {
+            var autobuses = await _autobusRepository.GetEliminados();
+            return Result<IReadOnlyList<AutobusDto>>.Ok(autobuses.Select(MapearAutobus).ToList());
+        }
+
+        private static AutobusDto MapearAutobus(AutobusModel a) 
+            => new(a.Id, a.Placa, a.Marca, a.Modelo, a.Capacidad, a.Estado);
+        private static AutobusDto MapearAutobus(Autobus a) 
+            => new(a.Id, a.Placa, a.Marca, a.Modelo, a.Capacidad, a.Estado);
+
+        
     }
 }

@@ -4,16 +4,12 @@ using SGA.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ---------- Servicios de la aplicacion ----------
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// ---------- CORS ----------
-// Los clientes Web/Desktop consumen esta Api desde otro origen.
-// En produccion, reemplazar AllowAnyOrigin por la lista de dominios reales.
 const string PoliticaClientesSga = "SgaClients";
 
 builder.Services.AddCors(options =>
@@ -26,7 +22,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ---------- Swagger ----------
+// Swagger 
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -38,7 +34,6 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// ---------- Pipeline HTTP ----------
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

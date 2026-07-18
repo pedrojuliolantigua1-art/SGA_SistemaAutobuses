@@ -45,7 +45,6 @@ namespace SGA.Api.Controllers
 
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Actualizar(int id, [FromBody] ActualizarAutobusDto dto)
-
             => this.AResultado(await _autobusService.ActualizarAsync(id, dto));
 
         [HttpPatch("{id:int}/estado")]
@@ -56,7 +55,9 @@ namespace SGA.Api.Controllers
         public async Task<IActionResult> Eliminar(int id, [FromBody] EliminarDto dto)
             => this.AResultado(await _autobusService.EliminarAsync(id, dto));
 
-        
+        [HttpGet("eliminados")]
+        public async Task<IActionResult> ListarEliminados()
+            => this.AResultado(await _autobusService.ListarEliminadosAsync());
 
     }
 }

@@ -49,5 +49,12 @@ namespace SGA.Infrastructure.Persistence.Repositories
             await Set.AsNoTracking()
             .Where(a => a.Placa == placa)
             .Select(Proyeccion).FirstOrDefaultAsync();
+
+        public async Task<IReadOnlyList<AutobusModel>> GetEliminados() =>
+            await Set.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(a => a.Eliminado)
+            .Select(Proyeccion)
+            .ToListAsync();
     }
 }

@@ -13,6 +13,7 @@ using SGA.Domain.Entities.Viajes;
 namespace SGA.Infrastructure.Persistence.Data
 {
     public sealed class SgaDbContext : DbContext
+
     {
         public SgaDbContext(DbContextOptions<SgaDbContext> options) : base(options) { }
 

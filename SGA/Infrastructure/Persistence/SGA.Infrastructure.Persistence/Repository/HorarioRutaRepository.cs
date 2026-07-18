@@ -26,5 +26,13 @@ namespace SGA.Infrastructure.Persistence.Repositories
             .Where(h => h.RutaId == rutaId && h.Activo)
             .Select(Proyeccion)
             .ToListAsync();
+
+        public async Task<IReadOnlyList<HorarioModel>> GetEliminados() =>
+            await Set.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(a => a.Eliminado)
+            .Select(Proyeccion)
+            .ToListAsync();
+        
     }
 }
