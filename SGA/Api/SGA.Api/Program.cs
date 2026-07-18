@@ -10,6 +10,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// Política CORS para permitir el acceso de los clientes Web y Desktop.
 const string PoliticaClientesSga = "SgaClients";
 
 builder.Services.AddCors(options =>
@@ -22,7 +23,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Swagger 
+// Configuración de Swagger
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
